@@ -12,12 +12,47 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Search, ShoppingCart, Menu, Package, Home, Store } from "lucide-react";
+import {
+  Search,
+  ShoppingCart,
+  Menu,
+  Package,
+  Home,
+  Store,
+  Gamepad2,
+  Gift,
+  Code2,
+  Sparkles,
+  Crown,
+  Star,
+  TrendingUp,
+  LayoutDashboard,
+  Share2,
+  BarChart3,
+  Smartphone,
+  Clock,
+  Mail,
+  MapPin,
+  MessageCircle,
+  Shield,
+} from "lucide-react";
 import { formatPrice } from "@/lib/format";
 import { ProductImage } from "./product-image";
 
+// Category bar links (matching the screenshot)
+const CAT_BAR = [
+  { label: "Home", icon: Home, view: "home" as const },
+  { label: "Games", icon: Gamepad2, category: "pubg-mobile" },
+  { label: "Gift Cards", icon: Gift, category: "steam-wallet" },
+  { label: "Software", icon: Code2, category: undefined },
+  { label: "AI Tools", icon: Sparkles, category: undefined },
+  { label: "Subscriptions", icon: Crown, category: undefined },
+  { label: "Best Value", icon: Star, view: "shop" as const },
+  { label: "Trending", icon: TrendingUp, view: "shop" as const },
+];
+
 export function Navbar() {
-  const { goHome, goShop, goCart, goOrders, cartCount, cartOpen, setCartOpen } = useStore();
+  const { goHome, goShop, goCart, goOrders, goAdmin, cartCount, cartOpen, setCartOpen } = useStore();
   const [query, setQuery] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -34,7 +69,6 @@ export function Navbar() {
   function submitSearch(e: React.FormEvent) {
     e.preventDefault();
     goShop();
-    // pass query via a custom event the shop view reads
     if (query.trim()) {
       window.dispatchEvent(new CustomEvent("playbeat:search", { detail: query.trim() }));
     }
@@ -44,58 +78,46 @@ export function Navbar() {
   return (
     <header
       className={`sticky top-0 z-40 w-full transition-colors ${
-        scrolled ? "bg-background/90 backdrop-blur border-b border-border" : "bg-background/60 backdrop-blur-sm"
+        scrolled ? "bg-background/95 backdrop-blur border-b border-border" : "bg-background/80 backdrop-blur-sm"
       }`}
     >
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6">
+      {/* ── Top bar: logo + nav buttons + cart ── */}
+      <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6">
         {/* Logo */}
         <button
           onClick={goHome}
-          className="flex shrink-0 items-center gap-2.5"
-          aria-label="Playbeat Digital Store home"
+          className="flex shrink-0 items-center gap-2"
+          aria-label="Playbeat home"
         >
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-primary to-muted-foreground/70 text-background">
-            <Store className="h-5 w-5" />
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-primary to-muted-foreground/70 text-background">
+            <Store className="h-4.5 w-4.5" />
           </span>
-          <span className="hidden flex-col leading-none sm:flex">
-            <span className="text-sm font-bold tracking-[0.18em] text-primary">PLAYBEAT</span>
-            <span className="text-[10px] font-medium tracking-[0.3em] text-muted-foreground">
-              DIGITAL STORE
-            </span>
+          <span className="text-base font-bold tracking-tight text-foreground">
+            playbeat<span className="text-chart-3">.digital</span>
           </span>
         </button>
 
-        {/* Desktop category nav */}
-        <nav className="hidden lg:flex items-center gap-1 ml-2">
-          <Button variant="ghost" size="sm" onClick={goHome} className="text-muted-foreground hover:text-foreground">
-            <Home className="mr-1.5 h-4 w-4" /> Home
+        {/* Top nav buttons (desktop) */}
+        <nav className="ml-4 hidden md:flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={() => goShop()} className="text-muted-foreground hover:text-foreground">
+            <Store className="mr-1.5 h-4 w-4 text-chart-1" /> Marketplace
           </Button>
-          {CATEGORIES.slice(0, 6).map((c) => (
-            <Button
-              key={c.id}
-              variant="ghost"
-              size="sm"
-              onClick={() => goShop(c.id)}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              {c.name}
-            </Button>
-          ))}
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+            <Share2 className="mr-1.5 h-4 w-4" /> Affiliate Hub
+          </Button>
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+            <BarChart3 className="mr-1.5 h-4 w-4" /> Analytics
+          </Button>
+          <Button variant="ghost" size="sm" onClick={goAdmin} className="text-muted-foreground hover:text-foreground">
+            <LayoutDashboard className="mr-1.5 h-4 w-4" /> Admin
+          </Button>
         </nav>
 
-        {/* Search (desktop) */}
-        <form onSubmit={submitSearch} className="relative ml-auto hidden md:block w-full max-w-xs">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search games, cards, AI tools…"
-            className="pl-9 bg-secondary/60 border-border"
-          />
-        </form>
-
-        {/* Actions */}
-        <div className="ml-auto flex items-center gap-1 md:ml-2">
+        {/* Right side: currency + cart + orders */}
+        <div className="ml-auto flex items-center gap-1">
+          <span className="hidden sm:inline-block rounded-md border border-border px-2 py-1 text-xs text-muted-foreground">
+            Rs PKR
+          </span>
           <Button variant="ghost" size="icon" onClick={goOrders} aria-label="My orders" title="My Orders">
             <Package className="h-5 w-5" />
           </Button>
@@ -131,9 +153,9 @@ export function Navbar() {
             </SheetTrigger>
             <SheetContent side="left" className="w-72 bg-card border-border p-0" aria-describedby={undefined}>
               <SheetHeader className="px-5 py-4 border-b border-border">
-                <SheetTitle className="text-foreground">{STORE.name}</SheetTitle>
+                <SheetTitle className="text-foreground">playbeat<span className="text-chart-3">.digital</span></SheetTitle>
               </SheetHeader>
-              <div className="p-4 space-y-4">
+              <div className="p-4 space-y-3">
                 <form onSubmit={submitSearch} className="relative">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -144,23 +166,56 @@ export function Navbar() {
                   />
                 </form>
                 <div className="flex flex-col gap-1">
-                  <Button variant="ghost" className="justify-start" onClick={() => { goHome(); setMobileOpen(false); }}>
-                    <Home className="mr-2 h-4 w-4" /> Home
-                  </Button>
-                  {CATEGORIES.map((c) => (
+                  {CAT_BAR.map((item) => (
                     <Button
-                      key={c.id}
+                      key={item.label}
                       variant="ghost"
                       className="justify-start"
-                      onClick={() => { goShop(c.id); setMobileOpen(false); }}
+                      onClick={() => {
+                        if (item.view === "home") goHome();
+                        else if (item.category) goShop(item.category);
+                        else goShop();
+                        setMobileOpen(false);
+                      }}
                     >
-                      {c.name}
+                      <item.icon className="mr-2 h-4 w-4" /> {item.label}
                     </Button>
                   ))}
                 </div>
               </div>
             </SheetContent>
           </Sheet>
+        </div>
+      </div>
+
+      {/* ── Category bar (second row) ── */}
+      <div className="border-t border-border/50 bg-background/60">
+        <div className="mx-auto flex h-11 max-w-7xl items-center gap-1 px-4 sm:px-6 overflow-x-auto no-scrollbar">
+          {CAT_BAR.map((item) => (
+            <button
+              key={item.label}
+              onClick={() => {
+                if (item.view === "home") goHome();
+                else if (item.category) goShop(item.category);
+                else goShop();
+              }}
+              className="group flex shrink-0 items-center gap-1.5 border-b-2 border-transparent px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-chart-1 hover:text-foreground"
+            >
+              <item.icon className="h-4 w-4" />
+              <span className="hidden sm:inline">{item.label}</span>
+            </button>
+          ))}
+
+          {/* Search bar (right side of category bar) */}
+          <form onSubmit={submitSearch} className="relative ml-auto hidden md:block w-full max-w-sm">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search game keys, AI tools, gift cards, software…"
+              className="h-8 pl-9 pr-3 text-xs bg-secondary/60 border-border"
+            />
+          </form>
         </div>
       </div>
     </header>

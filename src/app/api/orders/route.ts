@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
         category: product.category,
         icon: product.icon,
         gradient: product.gradient,
+        image: product.image,
         price: product.price,
         quantity: qty,
       });

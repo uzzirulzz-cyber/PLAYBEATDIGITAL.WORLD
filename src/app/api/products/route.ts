@@ -85,6 +85,10 @@ export async function POST(req: NextRequest) {
         badge: body.badge ? String(body.badge) : null,
         icon: String(body.icon),
         gradient: String(body.gradient),
+        image:
+          body.image !== undefined && body.image !== null
+            ? String(body.image)
+            : null,
         stock: body.stock !== undefined ? Number(body.stock) : 100,
         featured: Boolean(body.featured),
       },

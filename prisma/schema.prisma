@@ -4,7 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  // Switch to "postgresql" when migrating to Neon (set DATABASE_URL to the Neon connection string).
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -20,6 +21,7 @@ model Product {
   badge       String?
   icon        String
   gradient    String
+  image       String?
   stock       Int      @default(100)
   featured    Boolean  @default(false)
   createdAt   DateTime @default(now())
@@ -64,6 +66,7 @@ model OrderItem {
   category  String
   icon      String
   gradient  String
+  image     String?
   price     Float
   quantity  Int
 

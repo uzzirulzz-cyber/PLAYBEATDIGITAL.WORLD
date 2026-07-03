@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import { Search, ShoppingCart, Menu, Package, Home, Store } from "lucide-react";
 import { formatPrice } from "@/lib/format";
+import { ProductImage } from "./product-image";
 
 export function Navbar() {
   const { goHome, goShop, goCart, goOrders, cartCount, cartOpen, setCartOpen } = useStore();
@@ -192,9 +193,14 @@ function CartSheetBody() {
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
         {cart.map((item) => (
           <div key={item.productId} className="flex gap-3 rounded-lg border border-border bg-secondary/40 p-3">
-            <div className={`grid h-14 w-14 shrink-0 place-items-center rounded-md bg-gradient-to-br ${item.gradient}`}>
-              <span className="text-lg font-bold text-white">{item.name.charAt(0)}</span>
-            </div>
+            <ProductImage
+              src={item.image}
+              icon={item.icon}
+              gradient={item.gradient}
+              alt={item.name}
+              className="h-14 w-14 shrink-0 rounded-md"
+              iconClassName="h-6 w-6"
+            />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-foreground">{item.name}</p>
               <p className="text-xs text-muted-foreground">{formatPrice(item.price)}</p>

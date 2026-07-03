@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useStore } from "@/store/cart";
 import { api } from "@/lib/api";
 import { CategoryIcon } from "../icon";
+import { ProductImage } from "../product-image";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -140,9 +141,14 @@ export function CheckoutView() {
             <div className="mt-4 max-h-72 space-y-3 overflow-y-auto pr-1">
               {cart.map((item) => (
                 <div key={item.productId} className="flex gap-3">
-                  <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-md bg-gradient-to-br ${item.gradient}`}>
-                    <CategoryIcon name={item.icon} className="h-5 w-5 text-white/90" />
-                  </div>
+                  <ProductImage
+                    src={item.image}
+                    icon={item.icon}
+                    gradient={item.gradient}
+                    alt={item.name}
+                    className="h-11 w-11 shrink-0 rounded-md"
+                    iconClassName="h-5 w-5"
+                  />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium text-foreground">{item.name}</p>
                     <p className="text-xs text-muted-foreground">Qty {item.quantity} · {formatPrice(item.price)}</p>

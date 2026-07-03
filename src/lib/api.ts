@@ -14,6 +14,7 @@ export type Product = {
   badge: string | null;
   icon: string;
   gradient: string;
+  image: string | null;
   stock: number;
   featured: boolean;
   createdAt: string;
@@ -26,6 +27,7 @@ export type OrderItem = {
   category: string;
   icon: string;
   gradient: string;
+  image: string | null;
   price: number;
   quantity: number;
 };

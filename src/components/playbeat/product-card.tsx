@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Check, Star } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ProductImage } from "./product-image";
 
 export function ProductCard({ product }: { product: Product }) {
   const { goProduct, addToCart } = useStore();
@@ -24,6 +25,7 @@ export function ProductCard({ product }: { product: Product }) {
       category: product.category,
       icon: product.icon,
       gradient: product.gradient,
+      image: product.image,
       price: product.price,
     });
     setAdded(true);
@@ -37,32 +39,35 @@ export function ProductCard({ product }: { product: Product }) {
       className="playbeat-card group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-border bg-card"
     >
       {/* Artwork */}
-      <div className={`relative aspect-[4/3] w-full bg-gradient-to-br ${product.gradient}`}>
-        <div className="absolute inset-0 grid place-items-center">
-          <CategoryIcon name={product.icon} className="h-14 w-14 text-white/90 drop-shadow-lg transition-transform duration-300 group-hover:scale-110" />
-        </div>
-        {/* badges */}
-        <div className="absolute left-3 top-3 flex flex-col gap-1.5">
-          {product.badge && (
-            <Badge className="bg-background/90 text-foreground hover:bg-background/90 backdrop-blur">
-              {product.badge}
-            </Badge>
-          )}
-          {discount && (
-            <Badge className="bg-chart-1 text-background hover:bg-chart-1">-{discount}%</Badge>
-          )}
-        </div>
-        {product.stock <= 0 && (
-          <div className="absolute inset-0 grid place-items-center bg-background/60 backdrop-blur-sm">
-            <span className="rounded-md bg-background px-3 py-1 text-xs font-semibold text-muted-foreground">Out of stock</span>
-          </div>
+      <ProductImage
+        src={product.image}
+        icon={product.icon}
+        gradient={product.gradient}
+        alt={product.name}
+        className="relative aspect-[4/3] w-full"
+        imgClassName="object-cover transition-transform duration-300 group-hover:scale-105"
+        iconClassName="h-14 w-14"
+      />
+      <div className="pointer-events-none absolute left-3 top-3 z-10 flex flex-col gap-1.5">
+        {product.badge && (
+          <Badge className="bg-background/90 text-foreground hover:bg-background/90 backdrop-blur">
+            {product.badge}
+          </Badge>
         )}
-        {/* brand chip */}
-        <div className="absolute bottom-3 right-3">
-          <span className="rounded-md bg-background/80 px-2 py-0.5 text-[10px] font-medium text-muted-foreground backdrop-blur">
-            {product.brand}
-          </span>
+        {discount && (
+          <Badge className="bg-chart-1 text-background hover:bg-chart-1">-{discount}%</Badge>
+        )}
+      </div>
+      {product.stock <= 0 && (
+        <div className="absolute inset-0 z-10 grid place-items-center bg-background/60 backdrop-blur-sm">
+          <span className="rounded-md bg-background px-3 py-1 text-xs font-semibold text-muted-foreground">Out of stock</span>
         </div>
+      )}
+      {/* brand chip */}
+      <div className="pointer-events-none absolute bottom-3 right-3 z-10">
+        <span className="rounded-md bg-background/80 px-2 py-0.5 text-[10px] font-medium text-muted-foreground backdrop-blur">
+          {product.brand}
+        </span>
       </div>
 
       {/* Body */}

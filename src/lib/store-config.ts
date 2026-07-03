@@ -103,8 +103,31 @@ export type SeedProduct = {
   badge?: string;
   icon: string;
   gradient: string;
+  image?: string;
   stock: number;
   featured?: boolean;
+};
+
+// Real product images (web-sourced, OSS-hosted, guaranteed reachable).
+// Frontend falls back to the gradient+icon artwork if a URL fails to load.
+export const PRODUCT_IMAGES: Record<string, string> = {
+  "ea-fc-25-pc": "https://sfile.chatglm.cn/images-ppt/57304cfb5c52.jpg",
+  "cyberpunk-2077-steam": "https://sfile.chatglm.cn/images-ppt/dc98f88a094e.jpg",
+  "rdr2-rockstar": "https://sfile.chatglm.cn/images-ppt/413d61087961.jpg",
+  "steam-gift-card-50": "https://sfile.chatglm.cn/images-ppt/042e3916df21.jpg",
+  "amazon-gift-card-100": "https://sfile.chatglm.cn/images-ppt/09e62cf65a75.png",
+  "google-play-gift-card-25": "https://sfile.chatglm.cn/images-ppt/0720877e2f82.jpeg",
+  "chatgpt-plus-1-month": "https://sfile.chatglm.cn/images-ppt/d23bbbfa3367.png",
+  "midjourney-standard-1-month": "https://sfile.chatglm.cn/images-ppt/bf858e81d284.jpg",
+  "claude-pro-1-month": "https://sfile.chatglm.cn/images-ppt/5e3188fe3b8b.jpg",
+  "discord-nitro-1-month": "https://sfile.chatglm.cn/images-ppt/3c8ad7f0381d.jpg",
+  "nordvpn-1-year": "https://sfile.chatglm.cn/images-ppt/4efb0ef722bf.png",
+  "netflix-premium-1-month": "https://sfile.chatglm.cn/images-ppt/ecf6c79c6f81.png",
+  "youtube-premium-1-month": "https://sfile.chatglm.cn/images-ppt/6ca986a8db09.jpg",
+  "adobe-cc-1-month": "https://sfile.chatglm.cn/images-ppt/b4931b108380.jpg",
+  "office-365-1-year": "https://sfile.chatglm.cn/images-ppt/9f3adc25b5ba.png",
+  "trap-kings-sample-pack": "https://sfile.chatglm.cn/images-ppt/77155a575a5e.jpg",
+  "ai-prompt-engineering-ebook": "https://sfile.chatglm.cn/images-ppt/7b853b381bce.jpg",
 };
 
 export const SEED_PRODUCTS: SeedProduct[] = [
@@ -350,4 +373,4 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     stock: 999,
     featured: true,
   },
-];
+].map((p) => ({ ...p, image: PRODUCT_IMAGES[p.slug] }));

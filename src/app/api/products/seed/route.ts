@@ -24,6 +24,7 @@ export async function POST() {
         badge: p.badge ?? null,
         icon: p.icon,
         gradient: p.gradient,
+        image: p.image ?? null,
         stock: p.stock,
         featured: p.featured ?? false,
       })),

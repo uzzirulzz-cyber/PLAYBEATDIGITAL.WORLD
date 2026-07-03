@@ -51,6 +51,9 @@ export async function PUT(
     }
     if (body.icon !== undefined) data.icon = String(body.icon);
     if (body.gradient !== undefined) data.gradient = String(body.gradient);
+    if (body.image !== undefined) {
+      data.image = body.image === null ? null : String(body.image);
+    }
     if (body.stock !== undefined) data.stock = Number(body.stock);
     if (body.featured !== undefined) data.featured = Boolean(body.featured);
 

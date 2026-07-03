@@ -21,6 +21,7 @@ export type CartItem = {
   category: string;
   icon: string;
   gradient: string;
+  image?: string | null;
   price: number;
   quantity: number;
 };

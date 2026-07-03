@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api, type Product } from "@/lib/api";
 import { useStore } from "@/store/cart";
 import { CategoryIcon } from "../icon";
+import { ProductImage } from "../product-image";
 import { getCategory } from "@/lib/store-config";
 import { formatPrice, discountPercent } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,7 @@ export function ProductDetailView({ slug }: { slug: string }) {
         category: product.category,
         icon: product.icon,
         gradient: product.gradient,
+        image: product.image,
         price: product.price,
       },
       qty
@@ -99,15 +101,21 @@ export function ProductDetailView({ slug }: { slug: string }) {
 
       <div className="grid gap-8 lg:grid-cols-2">
         {/* Artwork */}
-        <div className={`relative aspect-square w-full overflow-hidden rounded-2xl bg-gradient-to-br ${product.gradient}`}>
-          <div className="absolute inset-0 grid place-items-center">
-            <CategoryIcon name={product.icon} className="h-32 w-32 text-white/90 drop-shadow-2xl" />
-          </div>
-          <div className="absolute left-4 top-4 flex flex-col gap-2">
+        <div className="relative aspect-square w-full overflow-hidden rounded-2xl">
+          <ProductImage
+            src={product.image}
+            icon={product.icon}
+            gradient={product.gradient}
+            alt={product.name}
+            className="h-full w-full"
+            imgClassName="object-cover"
+            iconClassName="h-32 w-32"
+          />
+          <div className="pointer-events-none absolute left-4 top-4 z-10 flex flex-col gap-2">
             {product.badge && <Badge className="bg-background/90 text-foreground hover:bg-background/90">{product.badge}</Badge>}
             {discount && <Badge className="bg-chart-1 text-background hover:bg-chart-1">-{discount}%</Badge>}
           </div>
-          <div className="absolute bottom-4 right-4">
+          <div className="pointer-events-none absolute bottom-4 right-4 z-10">
             <span className="rounded-md bg-background/80 px-2.5 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
               {product.brand}
             </span>

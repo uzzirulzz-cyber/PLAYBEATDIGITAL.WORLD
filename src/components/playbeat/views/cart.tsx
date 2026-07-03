@@ -2,6 +2,7 @@
 
 import { useStore } from "@/store/cart";
 import { CategoryIcon } from "../icon";
+import { ProductImage } from "../product-image";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -43,9 +44,14 @@ export function CartView() {
         <div className="space-y-3">
           {cart.map((item) => (
             <div key={item.productId} className="flex gap-4 rounded-xl border border-border bg-card p-4">
-              <div className={`grid h-20 w-20 shrink-0 place-items-center rounded-lg bg-gradient-to-br ${item.gradient}`}>
-                <CategoryIcon name={item.icon} className="h-9 w-9 text-white/90" />
-              </div>
+              <ProductImage
+                src={item.image}
+                icon={item.icon}
+                gradient={item.gradient}
+                alt={item.name}
+                className="h-20 w-20 shrink-0 rounded-lg"
+                iconClassName="h-9 w-9"
+              />
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">

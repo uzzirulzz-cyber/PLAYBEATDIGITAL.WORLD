@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { type Order } from "@/lib/api";
 import { useStore } from "@/store/cart";
 import { CategoryIcon } from "../icon";
+import { ProductImage } from "../product-image";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, Loader2, Receipt, ArrowRight, Copy } from "lucide-react";
@@ -96,9 +97,14 @@ function SuccessState({ order, onOrders, onShop }: { order: Order; onOrders: () 
         <div className="space-y-2">
           {order.items.map((it) => (
             <div key={it.id} className="flex items-center gap-3">
-              <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-md bg-gradient-to-br ${it.gradient}`}>
-                <CategoryIcon name={it.icon} className="h-4 w-4 text-white/90" />
-              </div>
+              <ProductImage
+                src={it.image}
+                icon={it.icon}
+                gradient={it.gradient}
+                alt={it.name}
+                className="h-9 w-9 shrink-0 rounded-md"
+                iconClassName="h-4 w-4"
+              />
               <p className="min-w-0 flex-1 truncate text-sm text-foreground">{it.name}</p>
               <span className="text-xs text-muted-foreground">×{it.quantity}</span>
               <span className="text-sm font-semibold text-foreground">{formatPrice(it.price * it.quantity)}</span>

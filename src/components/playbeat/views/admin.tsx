@@ -159,7 +159,25 @@ export function AdminView() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+    <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      {/* Background banner — Playbeat promo artwork, fixed behind content */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: "url(/admin-bg.png)",
+          backgroundColor: "#050B18",
+          opacity: 0.28,
+        }}
+      />
+      {/* dark gradient overlay so content stays readable */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{ background: "linear-gradient(to bottom, rgba(5,11,24,0.72), rgba(5,11,24,0.9))" }}
+      />
+      {/* content wrapper sits above the background */}
+      <div className="relative z-10">
       {/* Header */}
       <div className="mb-6 flex items-center gap-3">
         <Button
@@ -444,6 +462,7 @@ export function AdminView() {
           />
           <RecentOrdersCard stats={stats} />
         </div>
+      </div>
       </div>
     </div>
   );

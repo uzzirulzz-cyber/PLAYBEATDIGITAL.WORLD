@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getUblConfig, ublRegister, ublPaymentPageUrl } from "@/lib/ubl";
+import { getPayfastConfig, payfastInitiate } from "@/lib/payfast";
 
 export const dynamic = "force-dynamic";
 
 // POST /api/payment/initiate
 // Body: { orderRef: string }
-// Returns { ok, demo, paymentUrl|null, orderRef } or { ok:false, error } (502)
+// Returns { ok, demo, paymentUrl|null, orderRef, gateway } or { ok:false, error } (502)
+//
+// Uses PayFast (gopayfast.com) as the primary payment gateway.
+// Falls back to demo mode when PayFast credentials are not configured.
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as { orderRef?: string };
@@ -26,35 +29,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    const cfg = getUblConfig();
+    const cfg = getPayfastConfig();
+    const origin = req.nextUrl.origin;
+    const successUrl = `${origin}/api/payment/callback?orderRef=${encodeURIComponent(orderRef)}&status=PAID`;
+    const failureUrl = `${origin}/api/payment/callback?orderRef=${encodeURIComponent(orderRef)}&status=FAILED`;
 
-    // ---- Demo mode (no real UBL credentials configured) ----
+    // ---- Demo mode (no PayFast credentials configured) ----
     if (!cfg) {
       await db.order.update({
         where: { id: order.id },
-        data: { ublOrderId: orderRef },
+        data: { ublOrderId: orderRef }, // reuse field to store gateway transaction id
       });
       return NextResponse.json({
         ok: true,
         demo: true,
         paymentUrl: null,
         orderRef,
+        gateway: "payfast-demo",
       });
     }
 
-    // ---- Real UBL mode ----
-    const origin = req.nextUrl.origin;
-    const callbackUrl = `${origin}/api/payment/callback`;
-
-    const result = await ublRegister(cfg, {
+    // ---- Real PayFast mode ----
+    const result = await payfastInitiate(cfg, {
       orderId: orderRef,
       amount: order.amount,
-      currency: order.currency,
-      customerEmail: order.customerEmail,
       customerName: order.customerName,
+      customerEmail: order.customerEmail,
       customerPhone: order.customerPhone,
-      callbackUrl,
       description: `Playbeat order ${orderRef} — ${order.items.length} item(s)`,
+      successUrl,
+      failureUrl,
     });
 
     if (!result.ok) {
@@ -66,20 +70,15 @@ export async function POST(req: NextRequest) {
 
     await db.order.update({
       where: { id: order.id },
-      data: { ublOrderId: result.ublOrderId },
+      data: { ublOrderId: orderRef }, // store gateway reference
     });
-
-    const paymentUrl =
-      result.paymentUrl ||
-      `${ublPaymentPageUrl(cfg.sandbox)}?orderId=${encodeURIComponent(
-        result.ublOrderId
-      )}`;
 
     return NextResponse.json({
       ok: true,
       demo: false,
-      paymentUrl,
+      paymentUrl: result.checkoutUrl,
       orderRef,
+      gateway: "payfast",
     });
   } catch (err) {
     console.error("[payment/initiate] error", err);

@@ -112,7 +112,7 @@ export const api = {
     jsonFetch<Order>(`/api/orders/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
 
   initiatePayment: (orderRef: string) =>
-    jsonFetch<{ ok: boolean; demo: boolean; paymentUrl: string | null; orderRef: string; error?: string }>(
+    jsonFetch<{ ok: boolean; demo: boolean; paymentUrl: string | null; orderRef: string; gateway?: string; error?: string }>(
       `/api/payment/initiate`,
       { method: "POST", body: JSON.stringify({ orderRef }) }
     ),

@@ -13,7 +13,7 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
         <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
           <TrustItem icon={Truck} title="Instant delivery" text="Codes & access sent to your email immediately." />
-          <TrustItem icon={Shield} title="Secure UBL checkout" text="Visa · Mastercard · 3D Secure encrypted." />
+          <TrustItem icon={Shield} title="Secure PayFast checkout" text="Visa · Mastercard · RAAST · 3D Secure encrypted." />
           <TrustItem icon={Headset} title="24/7 support" text="Real humans, any time, every day." />
           <TrustItem icon={Store} title="Worldwide activation" text="Region-free digital products, global use." />
         </div>
@@ -65,7 +65,7 @@ export function Footer() {
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span className="rounded border border-border px-2 py-1">VISA</span>
               <span className="rounded border border-border px-2 py-1">Mastercard</span>
-              <span className="rounded border border-border px-2 py-1">UBL EPG</span>
+              <span className="rounded border border-border px-2 py-1">PayFast</span>
               <span className="rounded border border-border px-2 py-1">3D Secure</span>
               {/* discreet admin entry — unlabeled lock icon, owner-only */}
               <button

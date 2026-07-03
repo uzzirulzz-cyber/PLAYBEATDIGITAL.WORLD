@@ -45,7 +45,7 @@ export function HomeView() {
               </span>
             </h1>
             <p className="mt-4 max-w-md text-sm text-muted-foreground sm:text-base">
-              {STORE.tagline} Game keys, gift cards, AI tools and subscriptions — all in one place, secured by the UBL Payment Gateway.
+              {STORE.tagline} Game keys, gift cards, AI tools and subscriptions — all in one place, secured by the PayFast Payment Gateway.
             </p>
 
             <form onSubmit={submitSearch} className="relative mt-6 max-w-md">
@@ -131,7 +131,7 @@ export function HomeView() {
 
       {/* Trust banner */}
       <section className="mt-12 grid gap-4 sm:grid-cols-3">
-        <TrustTile icon={CreditCard} title="UBL secure checkout" text="Pay with Visa & Mastercard through the UBL Internet Payment Gateway with 3D Secure." />
+        <TrustTile icon={CreditCard} title="PayFast secure checkout" text="Pay with Visa, Mastercard & RAAST through the PayFast Payment Gateway with 3D Secure." />
         <TrustTile icon={ShieldCheck} title="Genuine licenses" text="Every key and subscription is 100% authentic and activation-guaranteed." />
         <TrustTile icon={Globe} title="Global delivery" text="All products are digital and region-free — usable anywhere in the world." />
       </section>

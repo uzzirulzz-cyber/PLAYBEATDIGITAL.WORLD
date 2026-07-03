@@ -57,7 +57,7 @@ export function CheckoutView() {
         items: cart.map((c) => ({ productId: c.productId, quantity: c.quantity })),
       });
 
-      // 2. Initiate UBL payment
+      // 2. Initiate PayFast payment
       const init = await api.initiatePayment(orderRef);
       if (!init.ok) {
         toast.error("Payment initiation failed", { description: init.error });
@@ -65,7 +65,7 @@ export function CheckoutView() {
         return;
       }
 
-      // 3a. Real UBL — redirect to hosted payment page
+      // 3a. Real PayFast — redirect to hosted payment page
       if (!init.demo && init.paymentUrl) {
         window.location.href = init.paymentUrl;
         return;
@@ -122,14 +122,14 @@ export function CheckoutView() {
               <div className="flex items-center gap-3">
                 <CreditCard className="h-6 w-6 text-primary" />
                 <div>
-                  <p className="text-sm font-semibold text-foreground">UBL Internet Payment Gateway</p>
-                  <p className="text-xs text-muted-foreground">Visa · Mastercard · 3D Secure</p>
+                  <p className="text-sm font-semibold text-foreground">PayFast Payment Gateway</p>
+                  <p className="text-xs text-muted-foreground">Visa · Mastercard · RAAST · 3D Secure</p>
                 </div>
                 <Lock className="ml-auto h-4 w-4 text-chart-1" />
               </div>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
-              You will be redirected to UBL&apos;s secure hosted payment page to complete your purchase.
+              You will be redirected to PayFast&apos;s secure hosted payment page to complete your purchase.
             </p>
           </section>
         </div>

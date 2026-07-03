@@ -162,10 +162,16 @@ export function Footer() {
             <button className="hover:text-foreground">Privacy</button>
             <button className="hover:text-foreground">Terms</button>
             <button className="hover:text-foreground">Refund Policy</button>
-            <button onClick={goAdmin} className="hover:text-foreground">ADMIN</button>
           </div>
           <p className="text-xs text-muted-foreground">
             © 2026 PlayBeat.Digital. All rights reserved.
+            {/* discreet admin entry — invisible dot, owner-only */}
+            <button
+              onClick={goAdmin}
+              aria-label="."
+              title=""
+              className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-border/40 align-middle hover:bg-border"
+            />
           </p>
           <div className="flex items-center gap-3">
             <a href="https://github.com/uzzirulzz-cyber/freshcopy" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground" aria-label="GitHub">

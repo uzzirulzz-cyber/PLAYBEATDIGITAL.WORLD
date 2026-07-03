@@ -26,7 +26,6 @@ import {
   Crown,
   Star,
   TrendingUp,
-  LayoutDashboard,
   Share2,
   BarChart3,
   Smartphone,
@@ -52,7 +51,7 @@ const CAT_BAR = [
 ];
 
 export function Navbar() {
-  const { goHome, goShop, goCart, goOrders, goAdmin, cartCount, cartOpen, setCartOpen } = useStore();
+  const { goHome, goShop, goCart, goOrders, cartCount, cartOpen, setCartOpen } = useStore();
   const [query, setQuery] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -97,7 +96,7 @@ export function Navbar() {
           </span>
         </button>
 
-        {/* Top nav buttons (desktop) */}
+        {/* Top nav buttons (desktop) — no admin on storefront */}
         <nav className="ml-4 hidden md:flex items-center gap-1">
           <Button variant="ghost" size="sm" onClick={() => goShop()} className="text-muted-foreground hover:text-foreground">
             <Store className="mr-1.5 h-4 w-4 text-chart-1" /> Marketplace
@@ -107,9 +106,6 @@ export function Navbar() {
           </Button>
           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
             <BarChart3 className="mr-1.5 h-4 w-4" /> Analytics
-          </Button>
-          <Button variant="ghost" size="sm" onClick={goAdmin} className="text-muted-foreground hover:text-foreground">
-            <LayoutDashboard className="mr-1.5 h-4 w-4" /> Admin
           </Button>
         </nav>
 

@@ -15,6 +15,7 @@ import { PaymentCallbackView } from "@/components/playbeat/views/payment-callbac
 import { OrdersView } from "@/components/playbeat/views/orders";
 import { AdminView } from "@/components/playbeat/views/admin";
 import { AiToolsView } from "@/components/playbeat/views/ai-tools";
+import { WhatsAppButton } from "@/components/playbeat/whatsapp-button";
 
 export default function Home() {
   const view = useStore((s) => s.view);
@@ -45,6 +46,8 @@ export default function Home() {
         {view.name === "ai-tools" && <AiToolsView />}
       </main>
       <Footer />
+      {/* Floating WhatsApp contact button — visible on all pages */}
+      <WhatsAppButton />
     </div>
   );
 }

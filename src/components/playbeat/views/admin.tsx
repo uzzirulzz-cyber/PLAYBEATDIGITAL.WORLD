@@ -38,6 +38,7 @@ import {
   TrendingUp,
   CreditCard,
   LogOut,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AdminLoginGate } from "./admin-login";
@@ -75,6 +76,7 @@ function findCategory(id: string) {
 
 export function AdminView() {
   const goHome = useStore((s) => s.goHome);
+  const goAiTools = useStore((s) => s.goAiTools);
   const adminAuthed = useStore((s) => s.adminAuthed);
   const adminLogout = useStore((s) => s.adminLogout);
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -202,6 +204,14 @@ export function AdminView() {
         >
           <RefreshCw className={refreshing ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
           <span className="hidden sm:inline">Refresh</span>
+        </Button>
+        <Button
+          variant="outline"
+          onClick={goAiTools}
+          className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-primary/40 text-foreground hover:from-blue-500/30 hover:to-purple-500/30"
+        >
+          <Sparkles className="h-4 w-4 text-purple-400" />
+          <span className="hidden sm:inline">AI Tools</span>
         </Button>
         <Button
           variant="ghost"

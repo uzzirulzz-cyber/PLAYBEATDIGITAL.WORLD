@@ -12,7 +12,8 @@ export type StoreView =
   | { name: "checkout" }
   | { name: "payment-callback"; orderRef?: string; status?: string }
   | { name: "orders" }
-  | { name: "admin" };
+  | { name: "admin" }
+  | { name: "ai-tools" };
 
 export type CartItem = {
   productId: string;
@@ -39,6 +40,7 @@ type StoreState = {
   goCheckout: () => void;
   goOrders: () => void;
   goAdmin: () => void;
+  goAiTools: () => void;
   goPaymentCallback: (orderRef?: string, status?: string) => void;
   // cart
   addToCart: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
@@ -73,6 +75,7 @@ export const useStore = create<StoreState>()(
       goCheckout: () => get().setView({ name: "checkout" }),
       goOrders: () => get().setView({ name: "orders" }),
       goAdmin: () => get().setView({ name: "admin" }),
+      goAiTools: () => get().setView({ name: "ai-tools" }),
       goPaymentCallback: (orderRef, status) =>
         get().setView({ name: "payment-callback", orderRef, status }),
 

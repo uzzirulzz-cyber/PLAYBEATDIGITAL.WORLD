@@ -75,3 +75,15 @@ model OrderItem {
 
   @@index([orderId])
 }
+
+model AiGeneration {
+  id         String   @id @default(cuid())
+  tool       String   // product-writer | blog-post | seo-meta | email-campaign | banner | customer-reply
+  input      String
+  output     String
+  tokensUsed Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([tool])
+  @@index([createdAt])
+}

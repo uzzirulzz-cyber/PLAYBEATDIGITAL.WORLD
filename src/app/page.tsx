@@ -14,6 +14,7 @@ import { CheckoutView } from "@/components/playbeat/views/checkout";
 import { PaymentCallbackView } from "@/components/playbeat/views/payment-callback";
 import { OrdersView } from "@/components/playbeat/views/orders";
 import { AdminView } from "@/components/playbeat/views/admin";
+import { AiToolsView } from "@/components/playbeat/views/ai-tools";
 
 export default function Home() {
   const view = useStore((s) => s.view);
@@ -41,6 +42,7 @@ export default function Home() {
         )}
         {view.name === "orders" && <OrdersView />}
         {view.name === "admin" && <AdminView />}
+        {view.name === "ai-tools" && <AiToolsView />}
       </main>
       <Footer />
     </div>

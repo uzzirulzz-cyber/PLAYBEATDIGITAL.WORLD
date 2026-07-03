@@ -58,6 +58,37 @@ export type AdminStats = {
   topProducts: { name: string; category: string; sold: number; revenue: number }[];
 };
 
+export type AiToolId =
+  | "product-writer"
+  | "blog-post"
+  | "seo-meta"
+  | "email-campaign"
+  | "banner"
+  | "customer-reply";
+
+export type AiGenerationResult = {
+  ok: boolean;
+  output?: string;
+  imageUrl?: string;
+  generationId?: string;
+  tokensUsed?: number;
+  error?: string;
+};
+
+export type AiStats = {
+  totalGenerations: number;
+  tokensUsed30d: number;
+  activeTools: number;
+  toolStats: { tool: string; count: number; lastUsed: string | null }[];
+  recent: {
+    id: string;
+    tool: string;
+    input: string;
+    createdAt: string;
+    tokensUsed: number;
+  }[];
+};
+
 async function jsonFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...init,
@@ -139,4 +170,15 @@ export const api = {
     ),
 
   adminStats: () => jsonFetch<AdminStats>(`/api/admin/stats`),
+
+  aiGenerate: (
+    tool: string,
+    input: string,
+    options?: Record<string, unknown>
+  ) =>
+    jsonFetch<AiGenerationResult>(`/api/ai/generate`, {
+      method: "POST",
+      body: JSON.stringify({ tool, input, options }),
+    }),
+  aiStats: () => jsonFetch<AiStats>(`/api/ai/stats`),
 };

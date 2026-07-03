@@ -149,6 +149,37 @@ export function HomeView() {
         </div>
       </section>
 
+      {/* Mid-section video banner */}
+      <section className="mt-12 overflow-hidden rounded-2xl border border-border relative">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 h-full w-full object-cover"
+        >
+          <source src="/mid-video.mp4" type="video/mp4" />
+        </video>
+        {/* Dark overlay for readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/40 to-background/70" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/60 via-transparent to-background/60" />
+        {/* Centered content */}
+        <div className="relative flex flex-col items-center justify-center py-16 text-center sm:py-20 lg:py-24">
+          <h2 className="text-2xl font-bold text-foreground sm:text-3xl lg:text-4xl">
+            Level up your game
+          </h2>
+          <p className="mt-3 max-w-md text-sm text-foreground/80 sm:text-base">
+            Instant top-ups for PUBG, Call of Duty, Free Fire & more. Delivered to your account in seconds.
+          </p>
+          <Button
+            className="mt-6 bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={() => goShop()}
+          >
+            Browse all top-ups <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </section>
+
       {/* Trust banner */}
       <section className="mt-12 grid gap-4 sm:grid-cols-3">
         <TrustTile icon={CreditCard} title="PayFast secure checkout" text="Pay with Visa, Mastercard & RAAST through the PayFast Payment Gateway with 3D Secure." />

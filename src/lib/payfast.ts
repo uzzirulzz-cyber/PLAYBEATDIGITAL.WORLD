@@ -55,38 +55,31 @@ export type TokenResult =
 
 export async function payfastGetToken(cfg: PayfastConfig): Promise<TokenResult> {
   try {
-    const res = await fetch(`${cfg.apiUrl}/oauth/token`, {
+    // PayFast uses application/x-www-form-urlencoded (NOT JSON)
+    const params = new URLSearchParams();
+    params.append("merchant_id", cfg.merchantId);
+    params.append("grant_type", cfg.grantType);
+    params.append("secured_key", cfg.securedKey);
+
+    const res = await fetch(`${cfg.apiUrl}/token`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        MERCHANT_ID: cfg.merchantId,
-        SECURED_KEY: cfg.securedKey,
-        GRANT_TYPE: cfg.grantType,
-      }),
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
       cache: "no-store",
     });
 
     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
 
-    if (!res.ok) {
-      return {
-        ok: false,
-        error:
-          (data.reason as string) ||
-          (data.message as string) ||
-          `PayFast auth failed (HTTP ${res.status})`,
-        raw: data,
-      };
-    }
-
-    // PayFast returns { code: "00", token: "..." } on success
+    // PayFast response: { token, refresh_token, code, message, expiry }
     const code = String(data.code ?? "");
     const token = (data.token as string) || (data.access_token as string);
 
-    if (code !== "00" || !token) {
+    if (!res.ok || !token) {
       return {
         ok: false,
-        error: (data.description as string) || "PayFast did not return a valid token",
+        error:
+          (data.message as string) ||
+          `PayFast auth failed (HTTP ${res.status})`,
         raw: data,
       };
     }

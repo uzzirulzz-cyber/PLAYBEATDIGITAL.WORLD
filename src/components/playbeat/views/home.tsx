@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CATEGORIES, STORE } from "@/lib/store-config";
+import { CATEGORIES, STORE, TRENDING_ITEMS } from "@/lib/store-config";
 import { api, type Product } from "@/lib/api";
 import { useStore } from "@/store/cart";
 import { ProductCard } from "../product-card";
@@ -131,6 +131,51 @@ export function HomeView() {
                 <span className="block truncate text-[11px] text-muted-foreground">{c.blurb}</span>
               </span>
             </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Trending Items — from items.html */}
+      <section className="mt-12">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-foreground">🔥 See What's Trending — Items</h2>
+          <Button variant="ghost" size="sm" onClick={() => goShop()} className="text-muted-foreground">
+            View all <ArrowRight className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          {TRENDING_ITEMS.map((item) => (
+            <div
+              key={item.slug}
+              onClick={() => goShop("items")}
+              className="playbeat-card group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-border bg-card"
+            >
+              <div className="relative aspect-[4/3] w-full overflow-hidden">
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                {item.badge && (
+                  <span className="absolute left-3 top-3 rounded-md bg-background/90 px-2 py-1 text-[10px] font-bold text-chart-1 backdrop-blur">
+                    {item.badge}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-1 flex-col p-4">
+                <h3 className="text-sm font-semibold text-foreground">{item.name}</h3>
+                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{item.description}</p>
+                <div className="mt-auto flex items-center justify-between pt-3">
+                  <span className="text-xs text-muted-foreground">
+                    {item.sales.toLocaleString()} sales
+                  </span>
+                  <span className="text-sm font-bold text-foreground">
+                    {item.price === 0 ? "FREE" : `$${item.price}`}
+                  </span>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       </section>

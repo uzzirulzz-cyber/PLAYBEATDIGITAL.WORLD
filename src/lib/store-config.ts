@@ -841,3 +841,141 @@ export const SEED_PRODUCTS: SeedProduct[] = [
     featured: false,
   },
 ].map((p) => ({ ...p, image: PRODUCT_IMAGES[p.category] }));
+
+// ── Trending Items (from items.html) ─────────────────────────────────────
+export type TrendingItem = {
+  name: string;
+  slug: string;
+  description: string;
+  category: string;
+  brand: string;
+  price: number;
+  badge?: string;
+  icon: string;
+  gradient: string;
+  image: string;
+  stock: number;
+  featured: boolean;
+  sales: number;
+};
+
+export const TRENDING_ITEMS: TrendingItem[] = [
+  {
+    name: "ARC Raiders",
+    slug: "item-arc-raiders",
+    description: "ARC Raiders is a free-to-play, extraction shooter set in a sci-fi world. Team up to take on alien threats.",
+    category: "items",
+    brand: "Playbeat Arena",
+    price: 0,
+    badge: "FREE",
+    icon: "Gamepad2",
+    gradient: "from-red-500/80 to-orange-600/80",
+    image: "https://sfile.chatglm.cn/images-ppt/faf6333bf8fb.jpg",
+    stock: 999,
+    featured: true,
+    sales: 39794,
+  },
+  {
+    name: "RBL",
+    slug: "item-rbl",
+    description: "RBL — competitive baseball game with real-time multiplayer matches and team management.",
+    category: "items",
+    brand: "Playbeat Arena",
+    price: 9.99,
+    badge: undefined,
+    icon: "Crosshair",
+    gradient: "from-purple-600/80 to-violet-700/80",
+    image: "https://sfile.chatglm.cn/images-ppt/a0210a6f6244.jpg",
+    stock: 999,
+    featured: true,
+    sales: 135682,
+  },
+  {
+    name: "Valorant",
+    slug: "item-valorant",
+    description: "Valorant — tactical 5v5 character shooter from Riot Games. Precise gunplay meets unique agent abilities.",
+    category: "items",
+    brand: "Playbeat Arena",
+    price: 0,
+    badge: "FREE",
+    icon: "Crosshair",
+    gradient: "from-amber-500/80 to-red-600/80",
+    image: "https://sfile.chatglm.cn/images-ppt/7d34f4925daf.jpg",
+    stock: 999,
+    featured: true,
+    sales: 55,
+  },
+  {
+    name: "Diablo 2: Resurrected",
+    slug: "item-diablo-2-resurrected",
+    description: "Diablo II Resurrected — the classic action RPG remastered. Hunt loot, slay demons across 5 acts.",
+    category: "items",
+    brand: "Playbeat Arena",
+    price: 39.99,
+    icon: "Skull",
+    gradient: "from-red-800/80 to-rose-900/80",
+    image: "https://sfile.chatglm.cn/images-ppt/0dabdf85c125.jpg",
+    stock: 999,
+    featured: true,
+    sales: 144853,
+  },
+  {
+    name: "Diablo 4",
+    slug: "item-diablo-4",
+    description: "Diablo IV — return to Sanctuary in the ultimate action RPG. Open world, shared world bosses, endless endgame.",
+    category: "items",
+    brand: "Playbeat Arena",
+    price: 69.99,
+    icon: "Skull",
+    gradient: "from-red-900/80 to-stone-800/80",
+    image: "https://sfile.chatglm.cn/images-ppt/6235ecbd64b0.jpg",
+    stock: 999,
+    featured: true,
+    sales: 99948,
+  },
+  {
+    name: "Warframe",
+    slug: "item-warframe",
+    description: "Warframe — free-to-play cooperative third-person shooter. Ninja-style space combat with 40+ frames.",
+    category: "items",
+    brand: "Playbeat Arena",
+    price: 0,
+    badge: "FREE",
+    icon: "Zap",
+    gradient: "from-yellow-500/80 to-amber-600/80",
+    image: "https://sfile.chatglm.cn/images-ppt/496902445446.png",
+    stock: 999,
+    featured: true,
+    sales: 16952,
+  },
+  {
+    name: "Clash of Clans",
+    slug: "item-clash-of-clans",
+    description: "Clash of Clans — build your village, train troops, and battle millions of players worldwide.",
+    category: "items",
+    brand: "Playbeat Arena",
+    price: 0,
+    badge: "FREE",
+    icon: "Sword",
+    gradient: "from-green-600/80 to-emerald-700/80",
+    image: "https://sfile.chatglm.cn/images-ppt/45c5d5f11937.jpeg",
+    stock: 999,
+    featured: true,
+    sales: 6967,
+  },
+  {
+    name: "Growtopia",
+    slug: "item-growtopia",
+    description: "Growtopia — 2D sandbox MMO where you build, mine, craft, and trade with players around the world.",
+    category: "items",
+    brand: "Playbeat Arena",
+    price: 0,
+    badge: "FREE",
+    icon: "Sprout",
+    gradient: "from-lime-500/80 to-green-600/80",
+    image: "https://sfile.chatglm.cn/images-ppt/2a6395b4c27d.jpg",
+    stock: 999,
+    featured: true,
+    sales: 5431,
+  },
+];

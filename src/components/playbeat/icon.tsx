@@ -21,6 +21,8 @@ import {
   Crosshair,
   Flame,
   Sword,
+  Skull,
+  Sprout,
   type LucideIcon,
 } from "lucide-react";
 
@@ -45,6 +47,8 @@ const ICONS: Record<string, LucideIcon> = {
   Crosshair,
   Flame,
   Sword,
+  Skull,
+  Sprout,
 };
 
 export function CategoryIcon({

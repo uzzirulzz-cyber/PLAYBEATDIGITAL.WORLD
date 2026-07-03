@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Playbeat — Sequence Diagrams</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    /* Playbeat dark navy theme */
+    --bg: #050B18;
+    --surface: #0A1428;
+    --surface-2: #111C34;
+    --border: #1C2740;
+    --text: #E8ECF4;
+    --text-sub: #C9D2E3;
+    --text-muted: #8A93A8;
+
+    /* Actor / lifeline colors */
+    --c-customer: #38BDF8;   /* cyan — Customer/Admin */
+    --c-browser:  #C9D2E3;   /* silver — Browser/SPA */
+    --c-api:      #4ADE80;   /* green — Storefront/Admin API */
+    --c-db:       #FACC15;   /* amber — Database */
+    --c-ubl:      #F472B6;   /* pink — UBL EPG (external) */
+
+    --line: #2A3756;
+    --arrow: #8A93A8;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  #root { width: 1360px; margin: 0 auto; padding: 44px 48px 52px; }
+
+  /* ── Page header ── */
+  .page-head { margin-bottom: 40px; }
+  .page-head .brand {
+    display: inline-flex; align-items: center; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .page-head .brand .mark {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--c-browser), #6E7BA0);
+    display: grid; place-items: center; color: var(--bg); font-weight: 800; font-size: 15px;
+  }
+  .page-head .brand .name {
+    font-size: 13px; font-weight: 700; letter-spacing: 0.18em; color: var(--c-browser);
+  }
+  .page-head .brand .sub {
+    font-size: 10px; font-weight: 500; letter-spacing: 0.3em; color: var(--text-muted); margin-top: 1px;
+  }
+  .page-head h1 {
+    font-size: 28px; font-weight: 800; letter-spacing: -0.01em; color: var(--text);
+  }
+  .page-head p {
+    margin-top: 8px; font-size: 14px; color: var(--text-muted); max-width: 880px; line-height: 1.6;
+  }
+
+  /* ── Diagram card ── */
+  .diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 32px 26px;
+    margin-bottom: 28px;
+  }
+  .diagram:last-child { margin-bottom: 0; }
+  .diagram-head { margin-bottom: 22px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+  .diagram-head h2 {
+    font-size: 19px; font-weight: 700; color: var(--text); letter-spacing: -0.005em;
+  }
+  .diagram-head .tag {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-muted);
+    background: var(--surface-2); border: 1px solid var(--border);
+    padding: 5px 10px; border-radius: 6px;
+  }
+
+  /* ── Sequence diagram core ── */
+  .seq {
+    position: relative;
+    padding-top: 92px;   /* room for actor headers */
+    padding-bottom: 8px;
+  }
+
+  /* Actor header row */
+  .actors {
+    position: absolute; top: 0; left: 0; right: 0;
+    display: grid;
+    height: 84px;
+    z-index: 3;
+  }
+  .actor {
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    gap: 6px;
+    position: relative;
+  }
+  .actor .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 13px; border-radius: 9px;
+    font-size: 12.5px; font-weight: 700; letter-spacing: 0.01em;
+    background: var(--surface-2);
+    border: 1.5px solid var(--ac, var(--border));
+    color: var(--ac, var(--text));
+    white-space: nowrap;
+  }
+  .actor .chip .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--ac, var(--text-muted));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ac, var(--text-muted)) 22%, transparent);
+  }
+  .actor .role {
+    font-size: 10.5px; color: var(--text-muted); letter-spacing: 0.04em;
+  }
+
+  /* Lifelines — vertical dashed lines through the column centers */
+  .lifelines {
+    position: absolute; top: 80px; left: 0; right: 0; bottom: 0;
+    display: grid;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .lifeline { position: relative; }
+  .lifeline::after {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; left: 50%;
+    border-left: 1.5px dashed var(--line);
+    transform: translateX(-0.75px);
+  }
+
+  /* Messages container */
+  .messages {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column;
+  }
+
+  /* A single message row — full width; the bar is positioned via left/right % */
+  .msg {
+    position: relative;
+    height: 50px;
+  }
+  .msg .bar {
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    height: 2px;
+    border-radius: 2px;
+  }
+  .msg .bar::after {
+    content: "";
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    width: 0; height: 0;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+  }
+  .msg.forward .bar { background: var(--c-ac, var(--arrow)); }
+  .msg.forward .bar::after {
+    right: -1px;
+    border-left: 9px solid var(--c-ac, var(--arrow));
+  }
+  .msg.return .bar {
+    border-top: 2px dashed var(--arrow);
+    background: transparent;
+    height: 0;
+  }
+  .msg.return .bar::after {
+    left: -1px;
+    border-right: 9px solid var(--arrow);
+  }
+
+  /* message label — sits clearly ABOVE the bar with a solid pill background */
+  .msg .label {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -180%);
+    background: var(--surface);
+    padding: 3px 9px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-sub);
+    white-space: nowrap;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    z-index: 2;
+  }
+  .msg .label .step {
+    display: inline-block;
+    min-width: 18px;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-right: 5px;
+  }
+  .msg.return .label { color: var(--text-muted); font-weight: 500; }
+
+  /* Phase label */
+  .phase {
+    position: relative;
+    margin: 8px 0 2px;
+    display: flex; align-items: center; gap: 10px;
+    height: 24px;
+  }
+  .phase .tag {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 4px 9px; border-radius: 5px;
+    white-space: nowrap;
+  }
+  .phase .rule { flex: 1; height: 1px; background: var(--border); }
+
+  /* Legend */
+  .legend {
+    margin-top: 20px;
+    display: flex; flex-wrap: wrap; gap: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .legend .item { display: inline-flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--text-muted); }
+  .legend .item .sw { width: 22px; height: 3px; border-radius: 2px; }
+  .legend .item .sw.fwd { background: var(--c-api); }
+  .legend .item .sw.ret { border-top: 2px dashed var(--arrow); height: 0; width: 22px; }
+
+  .footnote {
+    margin-top: 24px;
+    font-size: 11px; color: var(--text-muted); text-align: center; letter-spacing: 0.02em;
+  }
+</style>
+</head>
+<body>
+<div id="root">
+
+  <!-- Page header -->
+  <div class="page-head">
+    <div class="brand">
+      <div class="mark">P</div>
+      <div>
+        <div class="name">PLAYBEAT</div>
+        <div class="sub">DIGITAL STORE</div>
+      </div>
+    </div>
+    <h1>Sequence Diagrams — Storefront &amp; Admin</h1>
+    <p>
+      End-to-end interaction flows for the Playbeat Digital Store. Diagram 1 traces a customer purchase from
+      browsing through the UBL Payment Gateway to order confirmation. Diagram 2 traces the admin dashboard
+      load and the inline order-status update lifecycle. Arrows run between actor lifelines; dashed arrows
+      are responses.
+    </p>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- DIAGRAM 1 — STOREFRONT CHECKOUT                              -->
+  <!-- 5 columns. Centers: Customer=10%  Browser=30%  API=50%  DB=70%  UBL=90% -->
+  <!-- bar from A→B : left = min(a,b)% , right = (100 - max(a,b))%             -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <div class="diagram">
+    <div class="diagram-head">
+      <h2>1 · Storefront — Browse &rarr; Checkout &rarr; UBL Payment</h2>
+      <span class="tag">Customer purchase flow</span>
+    </div>
+
+    <div class="seq">
+      <div class="actors" style="grid-template-columns: repeat(5, 1fr);">
+        <div class="actor" style="--ac: var(--c-customer);"><span class="chip"><span class="dot"></span>Customer</span><span class="role">User / buyer</span></div>
+        <div class="actor" style="--ac: var(--c-browser);"><span class="chip"><span class="dot"></span>Browser SPA</span><span class="role">React + Zustand</span></div>
+        <div class="actor" style="--ac: var(--c-api);"><span class="chip"><span class="dot"></span>Storefront API</span><span class="role">Next.js routes</span></div>
+        <div class="actor" style="--ac: var(--c-db);"><span class="chip"><span class="dot"></span>Database</span><span class="role">Prisma + SQLite</span></div>
+        <div class="actor" style="--ac: var(--c-ubl);"><span class="chip"><span class="dot"></span>UBL EPG</span><span class="role">Payment gateway</span></div>
+      </div>
+
+      <div class="lifelines" style="grid-template-columns: repeat(5, 1fr);">
+        <div class="lifeline"></div><div class="lifeline"></div><div class="lifeline"></div><div class="lifeline"></div><div class="lifeline"></div>
+      </div>
+
+      <div class="messages">
+
+        <!-- Phase 1 · Browse & cart -->
+        <div class="phase"><span class="tag">Phase 1 · Browse &amp; cart</span><span class="rule"></span></div>
+
+        <div class="msg forward">
+          <div class="bar" style="left:10%; right:70%; --c-ac: var(--c-customer);"></div>
+          <div class="label" style="left:20%;"><span class="step">1</span>Open store, browse products</div>
+        </div>
+        <div class="msg forward">
+          <div class="bar" style="left:30%; right:50%; --c-ac: var(--c-browser);"></div>
+          <div class="label" style="left:40%;"><span class="step">2</span>GET /api/products</div>
+        </div>
+        <div class="msg forward">
+          <div class="bar" style="left:50%; right:30%; --c-ac: var(--c-api);"></div>
+          <div class="label" style="left:60%;"><span class="step">3</span>query products (featured first)</div>
+        </div>
+        <div class="msg return">
+          <div class="bar" style="left:50%; right:30%;"></div>
+          <div class="label" style="left:60%;"><span class="step">4</span>Product[] rows</div>
+        </div>
+        <div class="msg return">
+          <div class="bar" style="left:30%; right:50%;"></div>
+          <div class="label" style="left:40%;"><span class="step">5</span>200 Product[] JSON</div>
+        </div>
+        <div class="msg return">
+          <div class="bar" style="left:10%; right:70%;"></div>
+          <div class="label" style="left:20%;"><span class="step">6</span>Render grid &middot; add to cart</div>
+        </div>
+
+        <!-- Phase 2 · Create order -->
+        <div class="phase"><span class="tag">Phase 2 · Create order</span><span class="rule"></span></div>
+
+        <div class="msg forward">
+          <div class="bar" style="left:10%; right:70%; --c-ac: var(--c-customer);"></div>
+          <div class="label" style="left:20%;"><span class="step">7</span>Fill checkout form, press Pay</div>
+        </div>
+        <div class="msg forward">
+          <div class="bar" style="left:30%; right:50%; --c-ac: var(--c-browser);"></div>
+          <div class="label" style="left:40%;"><span class="step">8</span>POST /api/orders { items, customer }</div>
+        </div>
+        <div class="msg forward">
+          <div class="bar" style="left:50%; right:30%; --c-ac: var(--c-api);"></div>
+          <div class="label" style="left:60%;"><span class="step">9</span>create Order + OrderItems</div>
+        </div>
+        <div class="msg return">
+          <div class="bar" style="left:50%; right:30%;"></div>
+          <div class="label" style="left:60%;"><span class="step">10</span>order, orderRef</div>
+        </div>
+        <div class="msg return">
+          <div class="bar" style="left:30%; right:50%;"></div>
+          <div class="label" style="left:40%;"><span class="step">11</span>201 { order, orderRef }</div>
+        </div>
+
+        <!-- Phase 3 · UBL payment -->
+        <div class="phase"><span class="tag">Phase 3 · UBL payment</span><span class="rule"></span></div>
+
+        <div class="msg forward">
+          <div class="bar" style="left:30%; right:50%; --c-ac: var(--c-browser);"></div>
+          <div class="label" style="left:40%;"><span class="step">12</span>POST /api/payment/initiate { orderRef }</div>
+        </div>
+        <div class="msg forward">
+          <div class="bar" style="left:50%; right:10%; --c-ac: var(--c-api);"></div>
+          <div class="label" style="left:70%;"><span class="step">13</span>Registration &mdash; create transaction</div>
+        </div>
+        <div class="msg return">
+          <div class="bar" style="left:50%; right:10%;"></div>
+          <div class="label" style="left:70%;"><span class="step">14</span>paymentUrl, ublOrderId</div>
+        </div>
+        <div class="msg return">
+          <div class="bar" style="left:30%; right:50%;"></div>
+          <div class="label" style="left:40%;"><span class="step">15</span>{ paymentUrl } &middot; demo: skip redirect</div>
+        </div>
+        <div class="msg forward">
+          <div class="bar" style="left:10%; right:10%; --c-ac: var(--c-browser);"></div>
+          <div class="label" style="left:50%;"><span class="step">16</span>Redirect to UBL hosted payment page (real mode)</div>
+        </div>
+        <div class="msg forward">
+          <div class="bar" style="left:10%; right:10%; --c-ac: var(--c-ubl);"></div>
+          <div class="label" style="left:50%;"><span class="step">17</span>Card entry + 3D Secure authentication</div>
+        </div>
+        <div class="msg return">
+          <div class="bar" style="left:10%; right:10%;"></div>
+          <div class="label" style="left:50%;"><span class="step">18</span>Redirect back to /payment/callback</div>
+        </div>
+
+        <!-- Phase 4 · Finalize & confirm -->
+        <div class="phase"><span class="tag">Phase 4 · Finalize &amp; confirm</span><span class="rule"></span></div>
+
+        <div class="msg forward">
+          <div class="bar" style="left:30%; right:50%; --c-ac: var(--c-browser);"></div>
+          <div class="label" style="left:40%;"><span class="step">19</span>GET /api/payment/callback?orderRef</div>
+        </div>
+        <div class="msg forward">
+          <div class="bar" style="left:50%; right:10%; --c-ac: var(--c-api);"></div>
+          <div class="label" style="left:70%;"><span class="step">20</span>Finalization &mdash; status check</div>
+        </div>
+        <div class="msg return">
+          <div class="bar" style="left:50%; right:10%;"></div>
+          <div class="label" style="left:70%;"><span class="step">21</span>PAID &middot; approvalCode &middot; card</div>
+        </div>
+        <div class="msg forward">
+          <div class="bar" style="left:50%; right:30%; --c-ac: var(--c-api);"></div>
+          <div class="label" style="left:60%;"><span class="step">22</span>update Order status = PAID</div>
+        </div>
+        <div class="msg return">
+          <div class="bar" style="left:30%; right:50%;"></div>
+          <div class="label" style="left:40%;"><span class="step">23</span>{ status: PAID, approvalCode }</div>
+        </div>
+        <div class="msg return">
+          <div class="bar" style="left:10%; right:70%;"></div>
+          <div class="label" style="left:20%;"><span class="step">24</span>Success view &middot; order ref &middot; receipt</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="item"><span class="sw fwd"></span>Synchronous request</div>
+      <div class="item"><span class="sw ret"></span>Response / return</div>
+      <div class="item" style="margin-left:auto;">Demo mode auto-runs steps 16&ndash;18 server-side when UBL env vars are absent</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!-- DIAGRAM 2 — ADMIN ORDER MANAGEMENT                           -->
+  <!-- 4 columns. Centers: Admin=12.5%  Panel=37.5%  API=62.5%  DB=87.5% -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <div class="diagram">
+    <div class="diagram-head">
+      <h2>2 · Admin — Dashboard Load &amp; Inline Status Update</h2>
+      <span class="tag">Order management flow</span>
+    </div>
+
+    <div class="seq">
+      <div class="actors" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="actor" style="--ac: var(--c-customer);"><span class="chip"><span class="dot"></span>Admin</span><span class="role">Store operator</span></div>
+        <div class="actor" style="--ac: var(--c-browser);"><span class="chip"><span class="dot"></span>Admin Panel</span><span class="role">React view</span></div>
+        <div class="actor" style="--ac: var(--c-api);"><span class="chip"><span class="dot"></span>Admin API</span><span class="role">Next.js routes</span></div>
+        <div class="actor" style="--ac: var(--c-db);"><span class="chip"><span class="dot"></span>Database</span><span class="role">Prisma + SQLite</span></div>
+      </div>
+
+      <div class="lifelines" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="lifeline"></div><div class="lifeline"></div><div class="lifeline"></div><div class="lifeline"></div>
+      </div>
+
+      <div class="messages">
+
+        <!-- Phase A · Load dashboard -->
+        <div class="phase"><span class="tag">Phase A · Load dashboard</span><span class="rule"></span></div>
+
+        <div class="msg forward">
+          <div class="bar" style="left:12.5%; right:62.5%; --c-ac: var(--c-customer);"></div>
+          <div class="label" style="left:25%;"><span class="step">1</span>Open Admin panel</div>
+        </div>
+        <div class="msg forward">
+          <div class="bar" style="left:37.5%; right:37.5%; --c-ac: var(--c-browser);"></div>
+          <div class="label" style="left:50%;"><span class="step">2</span>Promise.all &mdash; stats + orders</div>
+        </div>
+        <div class="msg forward">
+          <div class="bar" style="left:62.5%; right:12.5%; --c-ac: var(--c-api);"></div>
+          <div class="label" style="left:75%;"><span class="step">3</span>aggregate revenue &amp; groupBy status</div>
+        </div>
+        <div class="msg return">
+          <div class="bar" style="left:62.5%; right:12.5%;"></div>
+          <div class="label" style="left:75%;"><span class="step">4</span>stats + recentOrders + topProducts</div>
+        </div>
+        <div class="msg return">
+          <div class="bar" style="left:37.5%; right:37.5%;"></div>
+          <div class="label" style="left:50%;"><span class="step">5</span>{ totalRevenue, byStatus, orders[] }</div>
+        </div>
+        <div class="msg return">
+          <div class="bar" style="left:12.5%; right:62.5%;"></div>
+          <div class="label" style="left:25%;"><span class="step">6</span>Render stat cards + table + top products</div>
+        </div>
+
+        <!-- Phase B · Filter orders -->
+        <div class="phase"><span class="tag">Phase B · Filter orders</span><span class="rule"></span></div>
+
+        <div class="msg forward">
+          <div class="bar" style="left:12.5%; right:62.5%; --c-ac: var(--c-customer);"></div>
+          <div class="label" style="left:25%;"><span class="step">7</span>Click filter chip (e.g. Paid)</div>
+        </div>
+        <div class="msg forward">
+          <div class="bar" style="left:37.5%; right:37.5%; --c-ac: var(--c-browser);"></div>
+          <div class="label" style="left:50%;"><span class="step">8</span>GET /api/orders?status=PAID</div>
+        </div>
+        <div class="msg forward">
+          <div class="bar" style="left:62.5%; right:12.5%; --c-ac: var(--c-api);"></div>
+          <div class="label" style="left:75%;"><span class="step">9</span>where status = PAID</div>
+        </div>
+        <div class="msg return">
+          <div class="bar" style="left:37.5%; right:37.5%;"></div>
+          <div class="label" style="left:50%;"><span class="step">10</span>filtered Order[]</div>
+        </div>
+
+        <!-- Phase C · Inline status update -->
+        <div class="phase"><span class="tag">Phase C · Inline status update</span><span class="rule"></span></div>
+
+        <div class="msg forward">
+          <div class="bar" style="left:12.5%; right:62.5%; --c-ac: var(--c-customer);"></div>
+          <div class="label" style="left:25%;"><span class="step">11</span>Change status in Select dropdown</div>
+        </div>
+        <div class="msg forward">
+          <div class="bar" style="left:37.5%; right:37.5%; --c-ac: var(--c-browser);"></div>
+          <div class="label" style="left:50%;"><span class="step">12</span>PATCH /api/orders/[id] { status }</div>
+        </div>
+        <div class="msg forward">
+          <div class="bar" style="left:62.5%; right:12.5%; --c-ac: var(--c-api);"></div>
+          <div class="label" style="left:75%;"><span class="step">13</span>update Order status</div>
+        </div>
+        <div class="msg return">
+          <div class="bar" style="left:37.5%; right:37.5%;"></div>
+          <div class="label" style="left:50%;"><span class="step">14</span>200 Order (updated, with items)</div>
+        </div>
+
+        <!-- Phase D · Silent refresh -->
+        <div class="phase"><span class="tag">Phase D · Silent refresh</span><span class="rule"></span></div>
+
+        <div class="msg forward">
+          <div class="bar" style="left:37.5%; right:37.5%; --c-ac: var(--c-browser);"></div>
+          <div class="label" style="left:50%;"><span class="step">15</span>Re-fetch stats + orders (silent)</div>
+        </div>
+        <div class="msg forward">
+          <div class="bar" style="left:62.5%; right:12.5%; --c-ac: var(--c-api);"></div>
+          <div class="label" style="left:75%;"><span class="step">16</span>re-aggregate revenue &amp; counts</div>
+        </div>
+        <div class="msg return">
+          <div class="bar" style="left:37.5%; right:37.5%;"></div>
+          <div class="label" style="left:50%;"><span class="step">17</span>refreshed stats + orders</div>
+        </div>
+        <div class="msg return">
+          <div class="bar" style="left:12.5%; right:62.5%;"></div>
+          <div class="label" style="left:25%;"><span class="step">18</span>Toast &ldquo;updated&rdquo; &middot; table + cards refresh</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="item"><span class="sw fwd"></span>Synchronous request</div>
+      <div class="item"><span class="sw ret"></span>Response / return</div>
+      <div class="item" style="margin-left:auto;">Status changes (PAID &harr; FAILED &harr; REFUNDED) instantly recompute revenue</div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    Playbeat Digital Store &middot; Next.js 16 App Router &middot; Prisma + SQLite &middot; UBL Internet Payment Gateway (EPG REST)
+  </div>
+
+</div>
+</body>
+</html>

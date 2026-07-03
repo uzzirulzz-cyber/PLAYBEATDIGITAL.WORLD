@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
         customerPhone: body.customerPhone!,
         shippingAddress: body.shippingAddress!,
         amount,
-        currency: "PKR",
+        currency: "USD",
         status: "PENDING",
         items: {
           createMany: { data: orderItemsData },

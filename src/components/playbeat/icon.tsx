@@ -11,6 +11,13 @@ import {
   BookOpen,
   Shield,
   Zap,
+  Download,
+  Layout,
+  Palette,
+  GraduationCap,
+  Users,
+  Share2,
+  CreditCard,
   type LucideIcon,
 } from "lucide-react";
 
@@ -25,6 +32,13 @@ const ICONS: Record<string, LucideIcon> = {
   BookOpen,
   Shield,
   Zap,
+  Download,
+  Layout,
+  Palette,
+  GraduationCap,
+  Users,
+  Share2,
+  CreditCard,
 };
 
 export function CategoryIcon({

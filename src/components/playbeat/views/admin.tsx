@@ -37,8 +37,10 @@ import {
   AlertTriangle,
   TrendingUp,
   CreditCard,
+  LogOut,
 } from "lucide-react";
 import { toast } from "sonner";
+import { AdminLoginGate } from "./admin-login";
 
 type Status = "PENDING" | "PAID" | "FAILED" | "REFUNDED";
 type Filter = "ALL" | Status;
@@ -73,6 +75,8 @@ function findCategory(id: string) {
 
 export function AdminView() {
   const goHome = useStore((s) => s.goHome);
+  const adminAuthed = useStore((s) => s.adminAuthed);
+  const adminLogout = useStore((s) => s.adminLogout);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [filter, setFilter] = useState<Filter>("ALL");
@@ -149,6 +153,11 @@ export function AdminView() {
     return stats.byStatus[f];
   };
 
+  // ── Password gate ── session-only auth; show login until verified
+  if (!adminAuthed) {
+    return <AdminLoginGate />;
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       {/* Header */}
@@ -175,6 +184,20 @@ export function AdminView() {
         >
           <RefreshCw className={refreshing ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
           <span className="hidden sm:inline">Refresh</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            adminLogout();
+            toast.success("Signed out of admin");
+            goHome();
+          }}
+          aria-label="Lock admin panel"
+          title="Lock admin panel"
+          className="text-muted-foreground hover:text-destructive"
+        >
+          <LogOut className="h-5 w-5" />
         </Button>
       </div>
 

@@ -12,11 +12,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Search, ShoppingCart, Menu, LayoutDashboard, Package, Home, Store } from "lucide-react";
+import { Search, ShoppingCart, Menu, Package, Home, Store } from "lucide-react";
 import { formatPrice } from "@/lib/format";
 
 export function Navbar() {
-  const { goHome, goShop, goCart, goAdmin, goOrders, cartCount, cartOpen, setCartOpen } = useStore();
+  const { goHome, goShop, goCart, goOrders, cartCount, cartOpen, setCartOpen } = useStore();
   const [query, setQuery] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -97,9 +97,6 @@ export function Navbar() {
         <div className="ml-auto flex items-center gap-1 md:ml-2">
           <Button variant="ghost" size="icon" onClick={goOrders} aria-label="My orders" title="My Orders">
             <Package className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={goAdmin} aria-label="Admin dashboard" title="Admin">
-            <LayoutDashboard className="h-5 w-5" />
           </Button>
 
           {/* Cart sheet trigger */}

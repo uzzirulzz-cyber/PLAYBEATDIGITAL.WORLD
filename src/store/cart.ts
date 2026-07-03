@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { checkAdminPassword } from "@/lib/admin-auth";
 
 export type StoreView =
   | { name: "home" }
@@ -47,6 +48,10 @@ type StoreState = {
   // selectors
   cartCount: () => number;
   cartTotal: () => number;
+  // admin gate (session-only — NOT persisted; resets on full reload)
+  adminAuthed: boolean;
+  adminLogin: (password: string) => boolean;
+  adminLogout: () => void;
 };
 
 export const useStore = create<StoreState>()(
@@ -104,6 +109,17 @@ export const useStore = create<StoreState>()(
 
       cartCount: () => get().cart.reduce((sum, i) => sum + i.quantity, 0),
       cartTotal: () => get().cart.reduce((sum, i) => sum + i.price * i.quantity, 0),
+
+      // admin gate — session-only, never persisted
+      adminAuthed: false,
+      adminLogin: (password) => {
+        if (checkAdminPassword(password)) {
+          set({ adminAuthed: true });
+          return true;
+        }
+        return false;
+      },
+      adminLogout: () => set({ adminAuthed: false }),
     }),
     {
       name: "playbeat-store",

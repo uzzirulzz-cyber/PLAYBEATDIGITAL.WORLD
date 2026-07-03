@@ -2,7 +2,7 @@
 
 import { STORE, CATEGORIES } from "@/lib/store-config";
 import { useStore } from "@/store/cart";
-import { Store, Mail, Shield, Truck, Headset } from "lucide-react";
+import { Store, Mail, Shield, Truck, Headset, Lock } from "lucide-react";
 
 export function Footer() {
   const { goShop, goOrders, goAdmin, goHome } = useStore();
@@ -46,7 +46,6 @@ export function Footer() {
             <FooterCol title="Account">
               <FooterLink onClick={goOrders}>My Orders</FooterLink>
               <FooterLink onClick={goShop}>All products</FooterLink>
-              <FooterLink onClick={goAdmin}>Admin panel</FooterLink>
             </FooterCol>
 
             <FooterCol title="Support">
@@ -68,6 +67,15 @@ export function Footer() {
               <span className="rounded border border-border px-2 py-1">Mastercard</span>
               <span className="rounded border border-border px-2 py-1">UBL EPG</span>
               <span className="rounded border border-border px-2 py-1">3D Secure</span>
+              {/* discreet admin entry — unlabeled lock icon, owner-only */}
+              <button
+                onClick={goAdmin}
+                aria-label="Staff login"
+                className="ml-1 grid h-7 w-7 place-items-center rounded border border-border/60 text-muted-foreground/40 transition-colors hover:border-border hover:text-muted-foreground"
+                title=""
+              >
+                <Lock className="h-3 w-3" />
+              </button>
             </div>
           </div>
         </div>

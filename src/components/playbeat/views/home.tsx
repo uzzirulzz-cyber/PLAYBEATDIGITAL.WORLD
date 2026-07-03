@@ -30,20 +30,26 @@ export function HomeView() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6">
-      {/* Hero — centered with LAMBO background + sakura petals overlay */}
+      {/* Hero — centered with video background + sakura petals overlay */}
       <section className="relative mt-6 overflow-hidden rounded-2xl border border-border">
-        {/* LAMBO background image */}
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url(/hero-bg.jpg)" }}
-        />
+        {/* Video background */}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 h-full w-full object-cover"
+          poster="/hero-bg.jpg"
+        >
+          <source src="/hero-video.mp4" type="video/mp4" />
+        </video>
         {/* Sakura petals overlay */}
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-screen"
+          className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-screen"
           style={{ backgroundImage: "url(/hero-sakura.webp)" }}
         />
         {/* Dark gradient overlay for readability (top + bottom fade) */}
-        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/50 to-background/90" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/55 to-background/95" />
         {/* Side fades for centered focus */}
         <div className="absolute inset-0 bg-gradient-to-r from-background/70 via-transparent to-background/70" />
 

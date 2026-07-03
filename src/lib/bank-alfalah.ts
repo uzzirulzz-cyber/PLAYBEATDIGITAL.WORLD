@@ -48,8 +48,8 @@ export function getBaflConfig(): BaflConfig | null {
 
 export function baflBaseUrl(sandbox: boolean): string {
   return sandbox
-    ? "https://sandbox.bankalfalah.com/HS/HS/HS"
-    : "https://payments.bankalfalah.com/HS/HS/HS";
+    ? "https://sandbox.bankalfalah.com/HS/api/HSAPI/HSAPI"
+    : "https://payments.bankalfalah.com/HS/api/HSAPI/HSAPI";
 }
 
 // ── AES-128-CBC encryption (matches the WordPress plugin's openssl_encrypt) ──
@@ -73,7 +73,7 @@ export async function baflGetAuthToken(
   orderRef: string,
   returnURL: string
 ): Promise<AuthTokenResult> {
-  const channelId = "1001";
+  const channelId = "1002";
   const isRedirectionRequest = "0";
 
   // Build the request parameters

@@ -18,6 +18,9 @@ import {
   Users,
   Share2,
   CreditCard,
+  Crosshair,
+  Flame,
+  Sword,
   type LucideIcon,
 } from "lucide-react";
 
@@ -39,6 +42,9 @@ const ICONS: Record<string, LucideIcon> = {
   Users,
   Share2,
   CreditCard,
+  Crosshair,
+  Flame,
+  Sword,
 };
 
 export function CategoryIcon({

@@ -41,6 +41,7 @@ export function HomeView() {
           className="absolute inset-0 h-full w-full object-cover"
           poster="/hero-bg.jpg"
         >
+          <source src="https://cdn.jsdelivr.net/gh/uzzirulzz-cyber/freshcopy@main/public/hero-video.mp4" type="video/mp4" />
           <source src="/hero-video.mp4" type="video/mp4" />
         </video>
         {/* Sakura petals overlay */}
@@ -158,6 +159,7 @@ export function HomeView() {
           playsInline
           className="absolute inset-0 h-full w-full object-cover"
         >
+          <source src="https://cdn.jsdelivr.net/gh/uzzirulzz-cyber/freshcopy@main/public/mid-video.mp4" type="video/mp4" />
           <source src="/mid-video.mp4" type="video/mp4" />
         </video>
         {/* Dark overlay for readability */}

@@ -43,8 +43,14 @@ export function PaymentCallbackView({ orderRef, status }: { orderRef?: string; s
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
             <p className="text-muted-foreground">Confirming your payment…</p>
           </div>
-        ) : paid ? (
+        ) : paid && order ? (
           <SuccessState order={order} onOrders={goOrders} onShop={goShop} />
+        ) : order === null ? (
+          <ErrorState
+            title="Order not found"
+            text="We couldn't find this order. Please check your order reference."
+            onShop={goShop}
+          />
         ) : (
           <ErrorState
             title="Payment not completed"

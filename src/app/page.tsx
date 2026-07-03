@@ -20,6 +20,9 @@ export default function Home() {
 
   // Ensure the catalogue is seeded on first load (idempotent)
   useEffect(() => {
+    // Manually rehydrate the persisted store (cart) AFTER React hydration
+    // to avoid SSR/CSR hydration mismatches.
+    useStore.persist.rehydrate();
     api.seedProducts().catch(() => {});
   }, []);
 

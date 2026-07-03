@@ -42,6 +42,13 @@ async function handleCallback(req: NextRequest) {
 
     if (isDemo) {
       const result = demoFinalize();
+      if (!result.ok || result.status !== "PAID") {
+        await db.order.update({
+          where: { id: order.id },
+          data: { status: "FAILED" },
+        });
+        return NextResponse.json({ status: "FAILED", orderRef, error: "Demo finalize did not succeed" });
+      }
       const updated = await db.order.update({
         where: { id: order.id },
         data: {

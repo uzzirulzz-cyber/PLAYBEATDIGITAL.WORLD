@@ -125,6 +125,9 @@ export const useStore = create<StoreState>()(
     {
       name: "playbeat-store",
       partialize: (s) => ({ cart: s.cart }) as StoreState,
+      // Skip automatic hydration to avoid SSR/CSR hydration mismatches.
+      // The store is manually rehydrated in the root layout's useEffect.
+      skipHydration: true,
     }
   )
 );

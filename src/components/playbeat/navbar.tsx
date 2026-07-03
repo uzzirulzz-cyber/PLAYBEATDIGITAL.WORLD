@@ -112,7 +112,7 @@ export function Navbar() {
                 )}
               </Button>
             </SheetTrigger>
-            <SheetContent className="w-full sm:max-w-md bg-card border-border flex flex-col p-0">
+            <SheetContent className="w-full sm:max-w-md bg-card border-border flex flex-col p-0" aria-describedby={undefined}>
               <SheetHeader className="px-5 py-4 border-b border-border">
                 <SheetTitle className="flex items-center gap-2 text-foreground">
                   <ShoppingCart className="h-5 w-5" /> Your Cart
@@ -129,7 +129,7 @@ export function Navbar() {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 bg-card border-border p-0">
+            <SheetContent side="left" className="w-72 bg-card border-border p-0" aria-describedby={undefined}>
               <SheetHeader className="px-5 py-4 border-b border-border">
                 <SheetTitle className="text-foreground">{STORE.name}</SheetTitle>
               </SheetHeader>
@@ -168,7 +168,7 @@ export function Navbar() {
 }
 
 function CartSheetBody() {
-  const { cart, updateQuantity, removeFromCart, cartTotal, goCheckout, goCart, setCartOpen } = useStore();
+  const { cart, updateQuantity, removeFromCart, cartTotal, goCheckout, goCart, goShop, setCartOpen } = useStore();
 
   if (cart.length === 0) {
     return (

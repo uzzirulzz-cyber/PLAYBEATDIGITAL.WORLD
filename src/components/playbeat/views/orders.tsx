@@ -86,7 +86,7 @@ export function OrdersView() {
         <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border py-16 text-center">
           <Package className="h-10 w-10 text-muted-foreground/50" />
           <p className="text-muted-foreground">No orders found for <span className="text-foreground">{searched}</span>.</p>
-          <Button variant="outline" onClick={goShop}>Start shopping</Button>
+          <Button variant="outline" onClick={() => goShop()}>Start shopping</Button>
         </div>
       )}
 

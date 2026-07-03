@@ -142,12 +142,14 @@ export const api = {
   updateOrder: (id: string, body: Partial<Order>) =>
     jsonFetch<Order>(`/api/orders/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
 
-  initiatePayment: (orderRef: string, card?: { cardNumber: string; expiryMonth: string; expiryYear: string; cvv: string }) =>
+  initiatePayment: (orderRef: string, card?: { cardNumber: string; expiryMonth: string; expiryYear: string; cvv: string }, gateway?: "payfast" | "bank-alfalah") =>
     jsonFetch<{
       ok: boolean;
       demo: boolean;
       orderRef: string;
       gateway?: string;
+      paymentUrl?: string;
+      authToken?: string;
       transactionId?: string;
       instrumentToken?: string;
       otpRequired?: boolean;
@@ -157,7 +159,7 @@ export const api = {
       error?: string;
     }>(
       `/api/payment/initiate`,
-      { method: "POST", body: JSON.stringify({ orderRef, card }) }
+      { method: "POST", body: JSON.stringify({ orderRef, card, gateway }) }
     ),
   paymentCallback: (orderRef: string, demo = false, paRes?: string) =>
     jsonFetch<{ status: string; orderRef: string; approvalCode?: string; cardBrand?: string; cardNumber?: string; error?: string }>(

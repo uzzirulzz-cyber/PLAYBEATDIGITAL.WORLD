@@ -7,6 +7,7 @@ import {
   payfastGetStatus,
   demoPayfastFinalize,
 } from "@/lib/payfast";
+import { getBaflConfig, demoBaflFinalize } from "@/lib/bank-alfalah";
 
 export const dynamic = "force-dynamic";
 
@@ -41,12 +42,48 @@ async function handleCallback(req: NextRequest) {
     }
 
     const demoFlag = req.nextUrl.searchParams.get("demo");
-    const cfg = getPayfastConfig();
-    const isDemo = demoFlag === "1" || demoFlag === "true" || !cfg;
+    const pfCfg = getPayfastConfig();
+    const baflCfg = getBaflConfig();
 
-    // ---- Demo mode ----
+    // Check if this is a Bank Alfalah return (BAFL sends result params in the redirect)
+    const baflResult = req.nextUrl.searchParams.get("result") || req.nextUrl.searchParams.get("RespCode");
+    const isBaflGateway = !pfCfg && baflCfg; // BAFL is primary when PayFast not configured
+
+    // ---- Bank Alfalah callback ----
+    if (isBaflGateway && baflCfg) {
+      // Real BAFL: check the result code from the redirect
+      // BAFL success codes: "000" or "0"
+      const success = baflResult === "000" || baflResult === "0" || baflResult === "success";
+      if (success) {
+        const updated = await db.order.update({
+          where: { id: order.id },
+          data: {
+            status: "PAID",
+            approvalCode: req.nextUrl.searchParams.get("TransactionReferenceNumber") || orderRef,
+            rawResponse: JSON.stringify(Object.fromEntries(req.nextUrl.searchParams.entries())),
+          },
+          include: { items: true },
+        });
+        return NextResponse.json({
+          status: "PAID",
+          orderRef,
+          approvalCode: updated.approvalCode,
+        });
+      }
+      // Mark as failed
+      await db.order.update({
+        where: { id: order.id },
+        data: { status: "FAILED", rawResponse: JSON.stringify({ baflResult }) },
+      });
+      return NextResponse.json({ status: "FAILED", orderRef, error: `Bank Alfalah result: ${baflResult}` });
+    }
+
+    const isDemo = demoFlag === "1" || demoFlag === "true" || (!pfCfg && !baflCfg);
+
+    // ---- Demo mode (no credentials at all) ----
     if (isDemo) {
-      const result = demoPayfastFinalize();
+      // Use BAFL demo if BAFL was the gateway, else PayFast demo
+      const result = baflCfg ? demoBaflFinalize() : demoPayfastFinalize();
       const updated = await db.order.update({
         where: { id: order.id },
         data: {
@@ -69,7 +106,7 @@ async function handleCallback(req: NextRequest) {
 
     // ---- Real PayFast: complete the tokenized transaction ----
     // Get fresh auth token
-    const tokenResult = await payfastGetToken(cfg!);
+    const tokenResult = await payfastGetToken(pfCfg!);
     if (!tokenResult.ok) {
       return NextResponse.json(
         { status: "FAILED", orderRef, error: tokenResult.error },
@@ -91,7 +128,7 @@ async function handleCallback(req: NextRequest) {
       // No transaction was initiated — just check status by basket_id
       const customerIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
       const orderDate = new Date(order.createdAt).toISOString().slice(0, 19).replace("T", " ");
-      const statusResult = await payfastGetStatus(cfg!, tokenResult.token, orderRef, orderDate, customerIp);
+      const statusResult = await payfastGetStatus(pfCfg!, tokenResult.token, orderRef, orderDate, customerIp);
 
       if (!statusResult.ok) {
         return NextResponse.json(
@@ -129,7 +166,7 @@ async function handleCallback(req: NextRequest) {
     const customerIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
     const orderDate = new Date(order.createdAt).toISOString().slice(0, 19).replace("T", " ");
 
-    const completeResult = await payfastTokenizedTransaction(cfg!, tokenResult.token, {
+    const completeResult = await payfastTokenizedTransaction(pfCfg!, tokenResult.token, {
       instrumentToken: stored.instrumentToken,
       transactionId: stored.transactionId,
       merchantUserId: order.customerEmail,

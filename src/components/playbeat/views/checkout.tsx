@@ -27,6 +27,7 @@ export function CheckoutView() {
     expiryYear: "",
     cvv: "",
   });
+  const [gateway, setGateway] = useState<"bank-alfalah" | "payfast">("bank-alfalah");
   const [loading, setLoading] = useState(false);
   const subtotal = cartTotal();
 
@@ -63,8 +64,8 @@ export function CheckoutView() {
         items: cart.map((c) => ({ productId: c.productId, quantity: c.quantity })),
       });
 
-      // 2. Initiate PayFast payment (with card details for real mode)
-      const cardDetails = card.cardNumber
+      // 2. Initiate payment with selected gateway
+      const cardDetails = gateway === "payfast" && card.cardNumber
         ? {
             cardNumber: card.cardNumber.replace(/\s/g, ""),
             expiryMonth: card.expiryMonth,
@@ -73,14 +74,21 @@ export function CheckoutView() {
           }
         : undefined;
 
-      const init = await api.initiatePayment(orderRef, cardDetails);
+      const init = await api.initiatePayment(orderRef, cardDetails, gateway);
       if (!init.ok) {
         toast.error("Payment initiation failed", { description: init.error });
         setLoading(false);
         return;
       }
 
-      // 3a. Real PayFast with 3DS — render the 3DS redirect HTML
+      // 3a. Bank Alfalah hosted checkout — redirect to BAFL payment page
+      if (!init.demo && init.paymentUrl && (init.gateway === "bank-alfalah")) {
+        toast.info("Redirecting to Bank Alfalah secure payment page…");
+        window.location.href = init.paymentUrl;
+        return;
+      }
+
+      // 3b. Real PayFast with 3DS — render the 3DS redirect HTML
       if (!init.demo && init.data3dsHtml) {
         toast.info("Redirecting to your bank for 3D Secure verification…");
         // Write the 3DS HTML to a new document (auto-submits to bank's ACS URL)
@@ -139,18 +147,49 @@ export function CheckoutView() {
               <span className="grid h-6 w-6 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">2</span>
               Payment method
             </h2>
-            <div className="rounded-lg border-2 border-primary/60 bg-secondary/40 p-4">
-              <div className="flex items-center gap-3">
-                <CreditCard className="h-6 w-6 text-primary" />
-                <div>
-                  <p className="text-sm font-semibold text-foreground">PayFast Payment Gateway</p>
-                  <p className="text-xs text-muted-foreground">Visa · Mastercard · RAAST · 3D Secure</p>
+            {/* Gateway selector */}
+            <div className="grid gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => setGateway("bank-alfalah")}
+                className={`flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-colors ${
+                  gateway === "bank-alfalah"
+                    ? "border-primary/60 bg-secondary/40"
+                    : "border-border bg-card hover:border-primary/30"
+                }`}
+              >
+                <CreditCard className="h-5 w-5 text-primary" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">Bank Alfalah</p>
+                  <p className="text-xs text-muted-foreground">Hosted checkout · Visa · Mastercard</p>
                 </div>
-                <Lock className="ml-auto h-4 w-4 text-chart-1" />
-              </div>
+                {gateway === "bank-alfalah" && (
+                  <span className="grid h-5 w-5 place-items-center rounded-full bg-primary text-xs text-primary-foreground">✓</span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setGateway("payfast")}
+                className={`flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-colors ${
+                  gateway === "payfast"
+                    ? "border-primary/60 bg-secondary/40"
+                    : "border-border bg-card hover:border-primary/30"
+                }`}
+              >
+                <CreditCard className="h-5 w-5 text-primary" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">PayFast</p>
+                  <p className="text-xs text-muted-foreground">Direct checkout · RAAST · 3D Secure</p>
+                </div>
+                {gateway === "payfast" && (
+                  <span className="grid h-5 w-5 place-items-center rounded-full bg-primary text-xs text-primary-foreground">✓</span>
+                )}
+              </button>
             </div>
 
-            {/* Card details (for real PayFast mode — demo mode skips these) */}
+            {/* Card details (only for PayFast — Bank Alfalah uses hosted page) */}
+            {gateway === "payfast" && (
+            <>
             <div className="mt-4 grid gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="cardNumber" className="text-sm text-foreground">Card number</Label>
@@ -210,6 +249,13 @@ export function CheckoutView() {
             <p className="mt-3 text-xs text-muted-foreground">
               Card details are sent directly to PayFast for processing. 3D Secure verification redirects you to your bank. Leave blank in demo mode.
             </p>
+            </>
+            )}
+            {gateway === "bank-alfalah" && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                You will be redirected to Bank Alfalah&apos;s secure hosted payment page to complete your purchase.
+              </p>
+            )}
           </section>
         </div>
 

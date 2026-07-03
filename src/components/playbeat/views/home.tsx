@@ -30,57 +30,71 @@ export function HomeView() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6">
-      {/* Hero */}
-      <section className="playbeat-sheen relative mt-6 overflow-hidden rounded-2xl border border-border bg-card">
-        <div className="absolute inset-0 bg-gradient-to-br from-secondary/60 via-card to-background" />
-        <div className="relative grid gap-8 p-6 sm:p-10 lg:grid-cols-2 lg:items-center">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary/60 px-3 py-1 text-xs text-muted-foreground">
-              <Zap className="h-3.5 w-3.5 text-chart-1" /> Instant digital delivery worldwide
+      {/* Hero — centered with LAMBO background + sakura petals overlay */}
+      <section className="relative mt-6 overflow-hidden rounded-2xl border border-border">
+        {/* LAMBO background image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url(/hero-bg.jpg)" }}
+        />
+        {/* Sakura petals overlay */}
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-screen"
+          style={{ backgroundImage: "url(/hero-sakura.webp)" }}
+        />
+        {/* Dark gradient overlay for readability (top + bottom fade) */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/50 to-background/90" />
+        {/* Side fades for centered focus */}
+        <div className="absolute inset-0 bg-gradient-to-r from-background/70 via-transparent to-background/70" />
+
+        {/* Centered content */}
+        <div className="relative flex flex-col items-center justify-center py-16 text-center sm:py-20 lg:py-28">
+          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-background/60 px-4 py-1.5 text-xs text-muted-foreground backdrop-blur">
+            <Zap className="h-3.5 w-3.5 text-chart-1" /> Instant digital delivery worldwide
+          </span>
+          <h1 className="mt-5 text-4xl font-bold leading-tight text-foreground sm:text-5xl lg:text-6xl">
+            Gaming top-ups,<br />
+            <span className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent">
+              delivered instantly.
             </span>
-            <h1 className="mt-4 text-3xl font-bold leading-tight text-foreground sm:text-4xl lg:text-5xl">
-              Digital products,<br />
-              <span className="bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent">
-                delivered instantly.
-              </span>
-            </h1>
-            <p className="mt-4 max-w-md text-sm text-muted-foreground sm:text-base">
-              {STORE.tagline} Game keys, gift cards, AI tools and subscriptions — all in one place, secured by the PayFast Payment Gateway.
-            </p>
+          </h1>
+          <p className="mt-4 max-w-xl text-sm text-foreground/80 sm:text-base">
+            {STORE.tagline} PUBG, Call of Duty, Free Fire, Steam & more — secured by Bank Alfalah Payment Gateway.
+          </p>
 
-            <form onSubmit={submitSearch} className="relative mt-6 max-w-md">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search 1000+ digital products…"
-                className="h-12 rounded-xl border-border bg-background/70 pl-10 pr-28 text-base"
-              />
-              <Button type="submit" className="absolute right-1.5 top-1.5 h-9 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90">
-                Search
-              </Button>
-            </form>
+          {/* Centered search */}
+          <form onSubmit={submitSearch} className="relative mt-6 w-full max-w-md">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search gaming top-ups…"
+              className="h-12 rounded-xl border-border bg-background/70 pl-10 pr-28 text-base backdrop-blur"
+            />
+            <Button type="submit" className="absolute right-1.5 top-1.5 h-9 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90">
+              Search
+            </Button>
+          </form>
 
-            {/* Stats */}
-            <div className="mt-8 grid grid-cols-3 gap-4 max-w-md">
-              <Stat value="17+" label="Live products" />
-              <Stat value="8" label="Categories" />
-              <Stat value="24/7" label="Support" />
-            </div>
+          {/* Centered stats */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-6">
+            <Stat value="52+" label="Live products" />
+            <span className="hidden h-8 w-px bg-border sm:block" />
+            <Stat value="7" label="Game categories" />
+            <span className="hidden h-8 w-px bg-border sm:block" />
+            <Stat value="24/7" label="Support" />
           </div>
 
-          {/* Category mini-grid */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-4">
-            {CATEGORIES.slice(0, 8).map((c) => (
+          {/* Category quick-links (centered pills) */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+            {CATEGORIES.map((c) => (
               <button
                 key={c.id}
                 onClick={() => goShop(c.id)}
-                className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-background/50 p-4 transition-colors hover:border-primary/40 hover:bg-secondary/60"
+                className="group inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 px-3 py-1.5 text-xs font-medium text-foreground backdrop-blur transition-colors hover:border-primary/40 hover:bg-secondary/60"
               >
-                <span className={`grid h-12 w-12 place-items-center rounded-lg bg-gradient-to-br ${c.gradient} text-white transition-transform group-hover:scale-110`}>
-                  <CategoryIcon name={c.icon} className="h-6 w-6" />
-                </span>
-                <span className="text-center text-xs font-medium text-foreground">{c.name}</span>
+                <CategoryIcon name={c.icon} className="h-3.5 w-3.5 text-primary" />
+                {c.name}
               </button>
             ))}
           </div>
@@ -156,9 +170,9 @@ export function HomeView() {
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div className="rounded-lg border border-border bg-background/40 p-3">
-      <p className="text-xl font-bold text-foreground">{value}</p>
-      <p className="text-[11px] text-muted-foreground">{label}</p>
+    <div className="text-center">
+      <p className="text-2xl font-bold text-foreground">{value}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   );
 }

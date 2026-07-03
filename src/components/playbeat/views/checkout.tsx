@@ -21,6 +21,12 @@ export function CheckoutView() {
     customerPhone: "",
     shippingAddress: "",
   });
+  const [card, setCard] = useState({
+    cardNumber: "",
+    expiryMonth: "",
+    expiryYear: "",
+    cvv: "",
+  });
   const [loading, setLoading] = useState(false);
   const subtotal = cartTotal();
 
@@ -43,7 +49,7 @@ export function CheckoutView() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.customerName || !form.customerEmail || !form.customerPhone || !form.shippingAddress) {
-      toast.error("Please fill in all fields");
+      toast.error("Please fill in all contact fields");
       return;
     }
     setLoading(true);
@@ -57,21 +63,36 @@ export function CheckoutView() {
         items: cart.map((c) => ({ productId: c.productId, quantity: c.quantity })),
       });
 
-      // 2. Initiate PayFast payment
-      const init = await api.initiatePayment(orderRef);
+      // 2. Initiate PayFast payment (with card details for real mode)
+      const cardDetails = card.cardNumber
+        ? {
+            cardNumber: card.cardNumber.replace(/\s/g, ""),
+            expiryMonth: card.expiryMonth,
+            expiryYear: card.expiryYear,
+            cvv: card.cvv,
+          }
+        : undefined;
+
+      const init = await api.initiatePayment(orderRef, cardDetails);
       if (!init.ok) {
         toast.error("Payment initiation failed", { description: init.error });
         setLoading(false);
         return;
       }
 
-      // 3a. Real PayFast — redirect to hosted payment page
-      if (!init.demo && init.paymentUrl) {
-        window.location.href = init.paymentUrl;
-        return;
+      // 3a. Real PayFast with 3DS — render the 3DS redirect HTML
+      if (!init.demo && init.data3dsHtml) {
+        toast.info("Redirecting to your bank for 3D Secure verification…");
+        // Write the 3DS HTML to a new document (auto-submits to bank's ACS URL)
+        const w = window.open("", "_self");
+        if (w) {
+          w.document.write(init.data3dsHtml);
+          w.document.close();
+        }
+        return; // customer returns to /api/payment/callback after 3DS
       }
 
-      // 3b. Demo mode — simulate the redirect by calling callback directly
+      // 3b. Demo mode — simulate the callback directly
       toast.info("Processing payment securely…");
       const result = await api.paymentCallback(orderRef, true);
 
@@ -128,8 +149,66 @@ export function CheckoutView() {
                 <Lock className="ml-auto h-4 w-4 text-chart-1" />
               </div>
             </div>
+
+            {/* Card details (for real PayFast mode — demo mode skips these) */}
+            <div className="mt-4 grid gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="cardNumber" className="text-sm text-foreground">Card number</Label>
+                <div className="relative">
+                  <CreditCard className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="cardNumber"
+                    value={card.cardNumber}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/\D/g, "").slice(0, 16);
+                      const formatted = v.replace(/(.{4})/g, "$1 ").trim();
+                      setCard((c) => ({ ...c, cardNumber: formatted }));
+                    }}
+                    placeholder="4111 1111 1111 1111"
+                    inputMode="numeric"
+                    className="pl-10 bg-secondary/40"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="expiryMonth" className="text-sm text-foreground">Month</Label>
+                  <Input
+                    id="expiryMonth"
+                    value={card.expiryMonth}
+                    onChange={(e) => setCard((c) => ({ ...c, expiryMonth: e.target.value.replace(/\D/g, "").slice(0, 2) }))}
+                    placeholder="09"
+                    inputMode="numeric"
+                    className="bg-secondary/40"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="expiryYear" className="text-sm text-foreground">Year</Label>
+                  <Input
+                    id="expiryYear"
+                    value={card.expiryYear}
+                    onChange={(e) => setCard((c) => ({ ...c, expiryYear: e.target.value.replace(/\D/g, "").slice(0, 4) }))}
+                    placeholder="2026"
+                    inputMode="numeric"
+                    className="bg-secondary/40"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="cvv" className="text-sm text-foreground">CVV</Label>
+                  <Input
+                    id="cvv"
+                    type="password"
+                    value={card.cvv}
+                    onChange={(e) => setCard((c) => ({ ...c, cvv: e.target.value.replace(/\D/g, "").slice(0, 4) }))}
+                    placeholder="•••"
+                    inputMode="numeric"
+                    className="bg-secondary/40"
+                  />
+                </div>
+              </div>
+            </div>
             <p className="mt-3 text-xs text-muted-foreground">
-              You will be redirected to PayFast&apos;s secure hosted payment page to complete your purchase.
+              Card details are sent directly to PayFast for processing. 3D Secure verification redirects you to your bank. Leave blank in demo mode.
             </p>
           </section>
         </div>

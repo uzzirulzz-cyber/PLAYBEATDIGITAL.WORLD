@@ -1,24 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getPayfastConfig, payfastInitiate } from "@/lib/payfast";
+import { getPayfastConfig, payfastGetToken, payfastGetTransactionToken } from "@/lib/payfast";
 
 export const dynamic = "force-dynamic";
 
 // POST /api/payment/initiate
-// Body: { orderRef: string }
-// Returns { ok, demo, paymentUrl|null, orderRef, gateway } or { ok:false, error } (502)
+// Body: { orderRef, card: { cardNumber, expiryMonth, expiryYear, cvv } }
 //
-// Uses PayFast (gopayfast.com) as the primary payment gateway.
-// Falls back to demo mode when PayFast credentials are not configured.
+// PayFast Direct Checkout flow:
+//   1. Get auth token
+//   2. Create transaction token (POST /transaction/token) with card details
+//   3. Return transaction_id, instrument_token, data_3ds_html to frontend
+//   Frontend then renders the 3DS HTML to redirect customer to bank's verification page.
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as { orderRef?: string };
+    const body = (await req.json()) as {
+      orderRef?: string;
+      card?: { cardNumber: string; expiryMonth: string; expiryYear: string; cvv: string };
+    };
+
     const orderRef = body.orderRef;
     if (!orderRef) {
-      return NextResponse.json(
-        { error: "Missing orderRef" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing orderRef" }, { status: 400 });
     }
 
     const order = await db.order.findUnique({
@@ -31,54 +34,86 @@ export async function POST(req: NextRequest) {
 
     const cfg = getPayfastConfig();
     const origin = req.nextUrl.origin;
-    const successUrl = `${origin}/api/payment/callback?orderRef=${encodeURIComponent(orderRef)}&status=PAID`;
-    const failureUrl = `${origin}/api/payment/callback?orderRef=${encodeURIComponent(orderRef)}&status=FAILED`;
+    const callbackUrl = `${origin}/api/payment/callback?orderRef=${encodeURIComponent(orderRef)}`;
 
-    // ---- Demo mode (no PayFast credentials configured) ----
+    // ---- Demo mode (no PayFast credentials) ----
     if (!cfg) {
       await db.order.update({
         where: { id: order.id },
-        data: { ublOrderId: orderRef }, // reuse field to store gateway transaction id
+        data: { ublOrderId: orderRef },
       });
       return NextResponse.json({
         ok: true,
         demo: true,
-        paymentUrl: null,
         orderRef,
         gateway: "payfast-demo",
       });
     }
 
     // ---- Real PayFast mode ----
-    const result = await payfastInitiate(cfg, {
-      orderId: orderRef,
-      amount: order.amount,
-      customerName: order.customerName,
-      customerEmail: order.customerEmail,
-      customerPhone: order.customerPhone,
-      description: `Playbeat order ${orderRef} — ${order.items.length} item(s)`,
-      successUrl,
-      failureUrl,
-    });
-
-    if (!result.ok) {
+    if (!body.card) {
       return NextResponse.json(
-        { ok: false, error: result.error },
+        { ok: false, error: "Card details required" },
+        { status: 400 }
+      );
+    }
+
+    // 1. Get auth token
+    const tokenResult = await payfastGetToken(cfg);
+    if (!tokenResult.ok) {
+      return NextResponse.json(
+        { ok: false, error: tokenResult.error },
         { status: 502 }
       );
     }
 
+    // 2. Create transaction token
+    const customerIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
+    const orderDate = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+    const txnResult = await payfastGetTransactionToken(cfg, tokenResult.token, {
+      basketId: orderRef,
+      txnAmt: order.amount,
+      orderDate,
+      merchantUserId: order.customerEmail,
+      userMobileNumber: order.customerPhone,
+      customerIp,
+      card: body.card,
+      callbackUrl,
+    });
+
+    if (!txnResult.ok) {
+      return NextResponse.json(
+        { ok: false, error: txnResult.error },
+        { status: 502 }
+      );
+    }
+
+    // Store transaction reference on the order
     await db.order.update({
       where: { id: order.id },
-      data: { ublOrderId: orderRef }, // store gateway reference
+      data: {
+        ublOrderId: txnResult.transactionId,
+        rawResponse: JSON.stringify({
+          transactionId: txnResult.transactionId,
+          instrumentToken: txnResult.instrumentToken,
+          otpRequired: txnResult.otpRequired,
+          eci: txnResult.eci,
+        }),
+      },
     });
 
     return NextResponse.json({
       ok: true,
       demo: false,
-      paymentUrl: result.checkoutUrl,
       orderRef,
       gateway: "payfast",
+      transactionId: txnResult.transactionId,
+      instrumentToken: txnResult.instrumentToken,
+      otpRequired: txnResult.otpRequired,
+      eci: txnResult.eci,
+      data3dsHtml: txnResult.data3dsHtml || null,
+      data3dsSecureid: txnResult.data3dsSecureid || null,
     });
   } catch (err) {
     console.error("[payment/initiate] error", err);

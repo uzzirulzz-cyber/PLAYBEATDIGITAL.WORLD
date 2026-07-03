@@ -111,14 +111,31 @@ export const api = {
   updateOrder: (id: string, body: Partial<Order>) =>
     jsonFetch<Order>(`/api/orders/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
 
-  initiatePayment: (orderRef: string) =>
-    jsonFetch<{ ok: boolean; demo: boolean; paymentUrl: string | null; orderRef: string; gateway?: string; error?: string }>(
+  initiatePayment: (orderRef: string, card?: { cardNumber: string; expiryMonth: string; expiryYear: string; cvv: string }) =>
+    jsonFetch<{
+      ok: boolean;
+      demo: boolean;
+      orderRef: string;
+      gateway?: string;
+      transactionId?: string;
+      instrumentToken?: string;
+      otpRequired?: boolean;
+      eci?: boolean;
+      data3dsHtml?: string | null;
+      data3dsSecureid?: string | null;
+      error?: string;
+    }>(
       `/api/payment/initiate`,
-      { method: "POST", body: JSON.stringify({ orderRef }) }
+      { method: "POST", body: JSON.stringify({ orderRef, card }) }
     ),
-  paymentCallback: (orderRef: string, demo = false) =>
+  paymentCallback: (orderRef: string, demo = false, paRes?: string) =>
     jsonFetch<{ status: string; orderRef: string; approvalCode?: string; cardBrand?: string; cardNumber?: string; error?: string }>(
-      `/api/payment/callback?orderRef=${encodeURIComponent(orderRef)}${demo ? "&demo=1" : ""}`
+      `/api/payment/callback?orderRef=${encodeURIComponent(orderRef)}${demo ? "&demo=1" : ""}${paRes ? `&paRes=${encodeURIComponent(paRes)}` : ""}`
+    ),
+  refundOrder: (orderId: string, reason?: string) =>
+    jsonFetch<{ ok: boolean; code?: string; message?: string; error?: string }>(
+      `/api/payment/refund`,
+      { method: "POST", body: JSON.stringify({ orderId, reason }) }
     ),
 
   adminStats: () => jsonFetch<AdminStats>(`/api/admin/stats`),

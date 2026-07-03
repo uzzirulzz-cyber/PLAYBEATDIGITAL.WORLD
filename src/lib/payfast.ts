@@ -1,23 +1,24 @@
 // PayFast Pakistan (gopayfast.com) Payment Gateway integration
 //
-// Flow (Hosted Checkout):
-//   1. Get Authentication Token — POST /oauth/token with MERCHANT_ID + SECURED_KEY
-//   2. Create Signature — md5(merchant_id:merchant_name:amount:order_id)
-//   3. Build Payment Payload — includes token, signature, customer info, URLs
-//   4. Redirect customer to PayFast hosted payment page
-//   5. PayFast redirects back to SUCCESS_URL / FAILURE_URL with transaction result
+// Direct Checkout API flow (3 steps for card payments):
+//   1. Get Auth Token — POST /token (form-urlencoded) with merchant_id + secured_key
+//   2. Get Transaction Token — POST /transaction/token (Bearer auth) with card/bank details
+//      → returns transaction_id, instrument_token, data_3ds_html (3DS redirect page)
+//   3. Complete Transaction — POST /transaction/tokenized with instrument_token + otp + 3DS pares
+//      → returns code "00" = success
 //
-// Credentials are obtained from the PayFast merchant dashboard (gopayfast.com).
-// When credentials are absent, the integration runs in DEMO mode so the full
-// checkout flow is testable end-to-end.
+// Plus: Get Transaction Status, Refund
+//
+// Credentials: PAYFAST_MERCHANT_ID, PAYFAST_SECURED_KEY from gopayfast.com dashboard.
+// When absent, runs in DEMO mode (simulates success).
 
 export type PayfastConfig = {
   merchantId: string;
   securedKey: string;
   merchantName: string;
+  merchantCatCode: string;
   grantType: string;
-  apiUrl: string;       // base API URL (auth + payment init)
-  checkoutUrl: string;  // hosted checkout page URL
+  apiUrl: string;       // BASE_URL for all API calls
   mode: "sandbox" | "production";
 };
 
@@ -32,22 +33,21 @@ export function getPayfastConfig(): PayfastConfig | null {
     merchantId,
     securedKey,
     merchantName: process.env.PAYFAST_MERCHANT_NAME || "Playbeat Digital Store",
+    merchantCatCode: process.env.PAYFAST_MERCHANT_CAT_CODE || "5732",
     grantType: process.env.PAYFAST_GRANT_TYPE || "client_credentials",
     apiUrl:
       process.env.PAYFAST_API_URL ||
       (mode === "sandbox"
         ? "https://sandboxapi.gopayfast.com"
         : "https://api.gopayfast.com"),
-    checkoutUrl:
-      process.env.PAYFAST_CHECKOUT_URL ||
-      (mode === "sandbox"
-        ? "https://sandboxcheckout.gopayfast.com"
-        : "https://checkout.gopayfast.com"),
     mode,
   };
 }
 
 // ── Step 1: Get Authentication Token ──────────────────────────────────────
+// POST /token  (application/x-www-form-urlencoded)
+// Body: merchant_id, grant_type=client_credentials, secured_key
+// Response: { token, refresh_token, code, message, expiry }
 
 export type TokenResult =
   | { ok: true; token: string; raw: unknown }
@@ -55,7 +55,6 @@ export type TokenResult =
 
 export async function payfastGetToken(cfg: PayfastConfig): Promise<TokenResult> {
   try {
-    // PayFast uses application/x-www-form-urlencoded (NOT JSON)
     const params = new URLSearchParams();
     params.append("merchant_id", cfg.merchantId);
     params.append("grant_type", cfg.grantType);
@@ -69,17 +68,12 @@ export async function payfastGetToken(cfg: PayfastConfig): Promise<TokenResult> 
     });
 
     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-
-    // PayFast response: { token, refresh_token, code, message, expiry }
-    const code = String(data.code ?? "");
     const token = (data.token as string) || (data.access_token as string);
 
     if (!res.ok || !token) {
       return {
         ok: false,
-        error:
-          (data.message as string) ||
-          `PayFast auth failed (HTTP ${res.status})`,
+        error: (data.message as string) || `PayFast auth failed (HTTP ${res.status})`,
         raw: data,
       };
     }
@@ -93,110 +87,96 @@ export async function payfastGetToken(cfg: PayfastConfig): Promise<TokenResult> 
   }
 }
 
-// ── Step 2: Create Signature ──────────────────────────────────────────────
-// Signature = md5(merchant_id : merchant_name : amount : order_id)
+// ── Step 2: Get Transaction Token ─────────────────────────────────────────
+// POST /transaction/token  (Bearer auth, form-urlencoded)
+// Creates a transaction and returns instrument_token + 3DS redirect HTML.
 
-export function payfastSignature(
-  cfg: PayfastConfig,
-  amount: number,
-  orderId: string
-): string {
-  const raw = `${cfg.merchantId}:${cfg.merchantName}:${amount}:${orderId}`;
-  return md5(raw);
-}
-
-// ── Step 3: Build Payment Payload + Initiate ──────────────────────────────
-
-export type PaymentInput = {
-  orderId: string;
-  amount: number;
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  description: string;
-  successUrl: string;
-  failureUrl: string;
+export type CardDetails = {
+  cardNumber: string;   // without spaces/hyphens
+  expiryMonth: string;  // e.g. "09"
+  expiryYear: string;   // e.g. "2026"
+  cvv: string;
 };
 
-export type InitiateResult =
-  | { ok: true; checkoutUrl: string; token: string; raw: unknown }
+export type TransactionTokenInput = {
+  basketId: string;          // order reference
+  txnAmt: number;            // amount
+  orderDate: string;         // YYYY-MM-DD HH:mm:ss
+  merchantUserId: string;    // customer identifier
+  userMobileNumber: string;
+  customerIp: string;
+  card: CardDetails;
+  callbackUrl: string;       // 3DS callback URL
+};
+
+export type TransactionTokenResult =
+  | {
+      ok: true;
+      transactionId: string;
+      instrumentToken: string;
+      otpRequired: boolean;
+      eci: boolean;
+      data3dsHtml?: string;     // pre-formatted HTML page for 3DS redirect
+      data3dsSecureid?: string;
+      raw: unknown;
+    }
   | { ok: false; error: string; raw?: unknown };
 
-export async function payfastInitiate(
+export async function payfastGetTransactionToken(
   cfg: PayfastConfig,
-  input: PaymentInput
-): Promise<InitiateResult> {
-  // 1. Get auth token
-  const tokenResult = await payfastGetToken(cfg);
-  if (!tokenResult.ok) {
-    return { ok: false, error: tokenResult.error, raw: tokenResult.raw };
-  }
-
-  // 2. Create signature
-  const signature = payfastSignature(cfg, input.amount, input.orderId);
-
-  // 3. Build payload
-  const backendCallback = `signature=${signature}&order_id=${input.orderId}`;
-  const payload = {
-    MERCHANT_ID: cfg.merchantId,
-    MERCHANT_NAME: cfg.merchantName,
-    TOKEN: tokenResult.token,
-    PROCCODE: "00",
-    TXNAMT: String(input.amount),
-    CUSTOMER_MOBILE_NO: input.customerPhone,
-    CUSTOMER_EMAIL_ADDRESS: input.customerEmail,
-    SIGNATURE: signature,
-    VERSION: "PLAYBEAT-PAYFAST-1.0",
-    TXNDESC: input.description,
-    SUCCESS_URL: input.successUrl,
-    FAILURE_URL: input.failureUrl,
-    BASKET_ID: input.orderId,
-    ORDER_DATE: new Date().toISOString().slice(0, 19).replace("T", " "),
-    CHECKOUT_URL: backendCallback,
-  };
-
-  // 4. Submit to PayFast — returns redirect URL or HTML form
+  token: string,
+  input: TransactionTokenInput
+): Promise<TransactionTokenResult> {
   try {
-    const res = await fetch(`${cfg.apiUrl}/payment/initiate`, {
+    const params = new URLSearchParams();
+    params.append("merchant_user_id", input.merchantUserId);
+    params.append("user_mobile_number", input.userMobileNumber);
+    params.append("basket_id", input.basketId);
+    params.append("txnamt", String(input.txnAmt));
+    params.append("order_date", input.orderDate);
+    params.append("account_type", "4"); // 4 = card
+    params.append("card_number", input.card.cardNumber);
+    params.append("expiry_month", input.card.expiryMonth);
+    params.append("expiry_year", input.card.expiryYear);
+    params.append("cvv", input.card.cvv);
+    params.append("customer_ip", input.customerIp);
+    params.append("merCatCode", cfg.merchantCatCode);
+    params.append("data_3ds_pagemode", "SIMPLE");
+    params.append("data_3ds_callback_url", input.callbackUrl);
+
+    const res = await fetch(`${cfg.apiUrl}/transaction/token`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${tokenResult.token}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(payload),
+      body: params.toString(),
       cache: "no-store",
     });
 
     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
 
-    if (!res.ok) {
+    const transactionId = (data.transaction_id as string) || "";
+    const instrumentToken = (data.instrument_token as string) || "";
+
+    if (!res.ok || !transactionId) {
       return {
         ok: false,
-        error:
-          (data.reason as string) ||
-          (data.message as string) ||
-          `PayFast initiate failed (HTTP ${res.status})`,
+        error: (data.status_msg as string) || (data.message as string) || `PayFast transaction token failed (HTTP ${res.status})`,
         raw: data,
       };
     }
 
-    const code = String(data.code ?? "");
-    if (code !== "00") {
-      return {
-        ok: false,
-        error: (data.description as string) || "PayFast rejected the payment request",
-        raw: data,
-      };
-    }
-
-    // PayFast returns a checkout URL to redirect the customer to
-    const checkoutUrl =
-      (data.checkoutUrl as string) ||
-      (data.redirectUrl as string) ||
-      (data.paymentUrl as string) ||
-      `${cfg.checkoutUrl}?order_id=${encodeURIComponent(input.orderId)}&token=${encodeURIComponent(tokenResult.token)}`;
-
-    return { ok: true, checkoutUrl, token: tokenResult.token, raw: data };
+    return {
+      ok: true,
+      transactionId,
+      instrumentToken,
+      otpRequired: Boolean(data.otp_required),
+      eci: Boolean(data.eci),
+      data3dsHtml: (data.data_3ds_html as string) || undefined,
+      data3dsSecureid: (data.data_3ds_secureid as string) || undefined,
+      raw: data,
+    };
   } catch (err) {
     return {
       ok: false,
@@ -205,71 +185,199 @@ export async function payfastInitiate(
   }
 }
 
-// ── Step 5: Verify Transaction Status (callback) ──────────────────────────
+// ── Step 3: Complete Tokenized Transaction ────────────────────────────────
+// POST /transaction/tokenized  (Bearer auth, form-urlencoded)
+// Completes the payment after 3DS verification.
 
-export type VerifyResult =
+export type TokenizedTxnInput = {
+  instrumentToken: string;
+  transactionId: string;
+  merchantUserId: string;
+  userMobileNumber: string;
+  basketId: string;
+  orderDate: string;
+  txnDesc: string;
+  txnAmt: number;
+  otp?: string;
+  eci: boolean;
+  customerIp: string;
+  data3dsSecureid?: string;
+  data3dsPares?: string;  // from 3DS callback
+};
+
+export type TokenizedTxnResult =
   | {
       ok: true;
-      status: "PAID" | "FAILED";
-      approvalCode?: string;
-      cardBrand?: string;
-      cardNumber?: string;
+      code: string;    // "00" = success
+      statusMsg: string;
+      transactionId: string;
+      basketId: string;
+      raw: unknown;
+    }
+  | { ok: false; error: string; code?: string; raw?: unknown };
+
+export async function payfastTokenizedTransaction(
+  cfg: PayfastConfig,
+  token: string,
+  input: TokenizedTxnInput
+): Promise<TokenizedTxnResult> {
+  try {
+    const params = new URLSearchParams();
+    params.append("instrument_token", input.instrumentToken);
+    params.append("transaction_id", input.transactionId);
+    params.append("merchant_user_id", input.merchantUserId);
+    params.append("user_mobile_number", input.userMobileNumber);
+    params.append("basket_id", input.basketId);
+    params.append("order_date", input.orderDate);
+    params.append("txndesc", input.txnDesc);
+    params.append("txnamt", String(input.txnAmt));
+    if (input.otp) params.append("otp", input.otp);
+    params.append("eci", String(input.eci));
+    params.append("customer_ip", input.customerIp);
+    params.append("merCatCode", cfg.merchantCatCode);
+    if (input.data3dsSecureid) params.append("data_3ds_secureid", input.data3dsSecureid);
+    if (input.data3dsPares) params.append("data_3ds_pares", input.data3dsPares);
+
+    const res = await fetch(`${cfg.apiUrl}/transaction/tokenized`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Bearer ${token}`,
+      },
+      body: params.toString(),
+      cache: "no-store",
+    });
+
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    const code = String(data.code ?? "");
+
+    return {
+      ok: true,
+      code,
+      statusMsg: (data.status_msg as string) || (data.message as string) || "",
+      transactionId: (data.transaction_id as string) || input.transactionId,
+      basketId: (data.basket_id as string) || input.basketId,
+      raw: data,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Network error contacting PayFast",
+    };
+  }
+}
+
+// ── Get Transaction Status ────────────────────────────────────────────────
+// GET /transaction/basket_id/<basket_id>  (Bearer auth)
+// Returns: { status_code, status_msg, basket_id, transaction_id, code }
+
+export type StatusResult =
+  | {
+      ok: true;
+      code: string;     // "00" = processed OK, "001" = pending
+      statusCode: string;
+      statusMsg: string;
+      transactionId: string;
+      isPaid: boolean;
       raw: unknown;
     }
   | { ok: false; error: string; raw?: unknown };
 
-export async function payfastVerify(
+export async function payfastGetStatus(
   cfg: PayfastConfig,
-  orderId: string,
-  token?: string
-): Promise<VerifyResult> {
-  // If no token, get a fresh one
-  let authToken = token;
-  if (!authToken) {
-    const tr = await payfastGetToken(cfg);
-    if (!tr.ok) return { ok: false, error: tr.error };
-    authToken = tr.token;
-  }
-
+  token: string,
+  basketId: string,
+  orderDate: string,
+  customerIp: string
+): Promise<StatusResult> {
   try {
-    const res = await fetch(
-      `${cfg.apiUrl}/payment/status/${encodeURIComponent(orderId)}`,
-      {
-        method: "GET",
-        headers: { Authorization: `Bearer ${authToken}` },
-        cache: "no-store",
-      }
-    );
+    const url = `${cfg.apiUrl}/transaction/basket_id/${encodeURIComponent(basketId)}?order_date=${encodeURIComponent(orderDate)}&customer_ip=${encodeURIComponent(customerIp)}`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
 
     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    const code = String(data.code ?? "");
+    const statusCode = String(data.status_code ?? "");
 
     if (!res.ok) {
       return {
         ok: false,
-        error:
-          (data.reason as string) ||
-          `PayFast verify failed (HTTP ${res.status})`,
+        error: (data.status_msg as string) || `PayFast status check failed (HTTP ${res.status})`,
         raw: data,
       };
     }
 
-    const code = String(data.code ?? "");
-    const txnStatus = String(data.transactionStatus ?? data.status ?? "").toUpperCase();
+    // code "00" = Processed OK (paid), "001" = Pending
+    const isPaid = code === "00" || code === "79"; // 79 = alternate success
 
-    if (code === "00" || txnStatus === "PAID" || txnStatus === "SUCCESS" || txnStatus === "APPROVED") {
+    return {
+      ok: true,
+      code,
+      statusCode,
+      statusMsg: (data.status_msg as string) || "",
+      transactionId: (data.transaction_id as string) || "",
+      isPaid,
+      raw: data,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Network error contacting PayFast",
+    };
+  }
+}
+
+// ── Refund Transaction ────────────────────────────────────────────────────
+// POST /transaction/refund/<transaction_id>  (Bearer auth)
+
+export type RefundResult =
+  | { ok: true; code: string; message: string; raw: unknown }
+  | { ok: false; error: string; raw?: unknown };
+
+export async function payfastRefund(
+  cfg: PayfastConfig,
+  token: string,
+  transactionId: string,
+  amount: number,
+  reason: string
+): Promise<RefundResult> {
+  try {
+    const params = new URLSearchParams();
+    params.append("txnamt", String(amount));
+    params.append("refund_reason", reason);
+    params.append("customer_ip", "127.0.0.1");
+
+    const res = await fetch(`${cfg.apiUrl}/transaction/refund/${encodeURIComponent(transactionId)}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Bearer ${token}`,
+      },
+      body: params.toString(),
+      cache: "no-store",
+    });
+
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    const code = String(data.code ?? "");
+
+    if (!res.ok) {
       return {
-        ok: true,
-        status: "PAID",
-        approvalCode: (data.approvalCode as string) || (data.rrn as string) || undefined,
-        cardBrand: (data.cardBrand as string) || undefined,
-        cardNumber: (data.maskedCardNumber as string) || (data.cardNumber as string) || undefined,
+        ok: false,
+        error: (data.message as string) || `Refund failed (HTTP ${res.status})`,
         raw: data,
       };
     }
 
     return {
       ok: true,
-      status: "FAILED",
+      code,
+      message: (data.message as string) || "Refund processed",
       raw: data,
     };
   } catch (err) {
@@ -282,21 +390,12 @@ export async function payfastVerify(
 
 // ── Demo mode (when credentials are absent) ───────────────────────────────
 
-export function demoPayfastFinalize(): VerifyResult {
+export function demoPayfastFinalize(): { code: string; approvalCode: string; cardBrand: string; cardNumber: string; raw: unknown } {
   return {
-    ok: true,
-    status: "PAID",
+    code: "00",
     approvalCode: `PF${Math.floor(100000 + Math.random() * 900000)}`,
     cardBrand: "Visa",
     cardNumber: "**** **** **** 4242",
     raw: { simulated: true, note: "Demo mode — no PayFast credentials configured." },
   };
-}
-
-// ── MD5 implementation (Node.js crypto) ───────────────────────────────────
-
-import { createHash } from "crypto";
-
-function md5(input: string): string {
-  return createHash("md5").update(input, "utf8").digest("hex");
 }

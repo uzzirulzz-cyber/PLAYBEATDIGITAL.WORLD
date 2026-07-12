@@ -5,7 +5,16 @@ import { generateOrderRef } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-type CartItemInput = { productId: string; quantity: number };
+type CartItemInput = {
+  productId: string;
+  quantity: number;
+  name?: string;
+  price?: number;
+  category?: string;
+  icon?: string;
+  gradient?: string;
+  image?: string | null;
+};
 
 // GET /api/orders — admin list of all orders with items.
 // Query: status (PENDING|PAID|FAILED|REFUNDED), email
@@ -81,19 +90,36 @@ export async function POST(req: NextRequest) {
     const orderItemsData: Prisma.OrderItemCreateManyOrderInput[] = [];
     for (const item of itemsInput) {
       const product = productMap.get(item.productId);
-      if (!product) continue; // skip missing product
       const qty = Math.max(1, Math.floor(Number(item.quantity) || 0));
-      amount += product.price * qty;
-      orderItemsData.push({
-        productId: product.id,
-        name: product.name,
-        category: product.category,
-        icon: product.icon,
-        gradient: product.gradient,
-        image: product.image,
-        price: product.price,
-        quantity: qty,
-      });
+
+      if (product) {
+        // Product found in DB — use DB data
+        amount += product.price * qty;
+        orderItemsData.push({
+          productId: product.id,
+          name: product.name,
+          category: product.category,
+          icon: product.icon,
+          gradient: product.gradient,
+          image: product.image,
+          price: product.price,
+          quantity: qty,
+        });
+      } else if (item.name && item.price !== undefined) {
+        // Product not in DB (e.g. trending items) — use cart data directly
+        amount += item.price * qty;
+        orderItemsData.push({
+          productId: null,
+          name: item.name,
+          category: item.category || "items",
+          icon: item.icon || "Gamepad2",
+          gradient: item.gradient || "from-violet-600/80 to-fuchsia-600/80",
+          image: item.image || null,
+          price: item.price,
+          quantity: qty,
+        });
+      }
+      // skip items with no DB match and no cart data
     }
 
     if (orderItemsData.length === 0) {

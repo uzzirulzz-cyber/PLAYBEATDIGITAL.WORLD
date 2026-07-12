@@ -27,7 +27,7 @@ export function CheckoutView() {
     expiryYear: "",
     cvv: "",
   });
-  const [gateway, setGateway] = useState<"bank-alfalah" | "payfast">("bank-alfalah");
+  const [gateway, setGateway] = useState<"paypal" | "bank-alfalah" | "payfast">("paypal");
   const [loading, setLoading] = useState(false);
   const subtotal = cartTotal();
 
@@ -61,7 +61,16 @@ export function CheckoutView() {
         customerEmail: form.customerEmail,
         customerPhone: form.customerPhone,
         shippingAddress: form.shippingAddress,
-        items: cart.map((c) => ({ productId: c.productId, quantity: c.quantity })),
+        items: cart.map((c) => ({
+          productId: c.productId,
+          quantity: c.quantity,
+          name: c.name,
+          price: c.price,
+          category: c.category,
+          icon: c.icon,
+          gradient: c.gradient,
+          image: c.image,
+        })),
       });
 
       // 2. Initiate payment with selected gateway
@@ -81,7 +90,14 @@ export function CheckoutView() {
         return;
       }
 
-      // 3a. Bank Alfalah hosted checkout — redirect to BAFL payment page
+      // 3a. PayPal hosted checkout — redirect to PayPal approval page
+      if (!init.demo && init.paymentUrl && init.gateway === "paypal") {
+        toast.info("Redirecting to PayPal…");
+        window.location.href = init.paymentUrl;
+        return;
+      }
+
+      // 3b. Bank Alfalah hosted checkout — redirect to BAFL payment page
       if (!init.demo && init.paymentUrl && (init.gateway === "bank-alfalah")) {
         toast.info("Redirecting to Bank Alfalah secure payment page…");
         window.location.href = init.paymentUrl;
@@ -149,6 +165,24 @@ export function CheckoutView() {
             </h2>
             {/* Gateway selector */}
             <div className="grid gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => setGateway("paypal")}
+                className={`flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-colors ${
+                  gateway === "paypal"
+                    ? "border-primary/60 bg-secondary/40"
+                    : "border-border bg-card hover:border-primary/30"
+                }`}
+              >
+                <CreditCard className="h-5 w-5 text-[#0070ba]" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">PayPal</p>
+                  <p className="text-xs text-muted-foreground">Pay with PayPal account or card</p>
+                </div>
+                {gateway === "paypal" && (
+                  <span className="grid h-5 w-5 place-items-center rounded-full bg-primary text-xs text-primary-foreground">✓</span>
+                )}
+              </button>
               <button
                 type="button"
                 onClick={() => setGateway("bank-alfalah")}

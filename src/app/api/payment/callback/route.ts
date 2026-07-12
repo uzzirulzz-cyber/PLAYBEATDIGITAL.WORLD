@@ -8,10 +8,11 @@ import {
   demoPayfastFinalize,
 } from "@/lib/payfast";
 import { getBaflConfig, demoBaflFinalize } from "@/lib/bank-alfalah";
+import { getPaypalConfig, paypalGetToken, paypalCaptureOrder } from "@/lib/paypal";
 
 export const dynamic = "force-dynamic";
 
-// GET + POST /api/payment/callback?orderRef=...[&demo=1][&paRes=...]
+// GET + POST /api/payment/callback?orderRef=...[&gateway=paypal][&demo=1][&paRes=...]
 //
 // Called after 3DS verification (bank redirects customer back here with paRes).
 // Completes the tokenized transaction and checks final status.
@@ -41,9 +42,100 @@ async function handleCallback(req: NextRequest) {
       });
     }
 
+    const gatewayParam = req.nextUrl.searchParams.get("gateway");
     const demoFlag = req.nextUrl.searchParams.get("demo");
+    const redirectStatus = req.nextUrl.searchParams.get("status")?.toUpperCase();
     const pfCfg = getPayfastConfig();
     const baflCfg = getBaflConfig();
+    const ppCfg = getPaypalConfig();
+
+    // ---- Demo mode (explicit demo=1 flag) — short-circuit before real gateways ----
+    const isExplicitDemo = demoFlag === "1" || demoFlag === "true";
+    if (isExplicitDemo) {
+      const result = ppCfg ? { approvalCode: `PP${Math.floor(100000 + Math.random() * 900000)}`, cardBrand: "PayPal", cardNumber: null } : (baflCfg ? { approvalCode: `BAFL${Math.floor(100000 + Math.random() * 900000)}`, cardBrand: "Visa", cardNumber: "**** **** **** 4242" } : { approvalCode: `PF${Math.floor(100000 + Math.random() * 900000)}`, cardBrand: "Visa", cardNumber: "**** **** **** 4242" });
+      const updated = await db.order.update({
+        where: { id: order.id },
+        data: {
+          status: "PAID",
+          approvalCode: result.approvalCode,
+          cardBrand: result.cardBrand,
+          cardNumber: result.cardNumber,
+          rawResponse: JSON.stringify({ simulated: true }),
+        },
+        include: { items: true },
+      });
+      return NextResponse.json({
+        status: "PAID",
+        orderRef,
+        approvalCode: updated.approvalCode,
+        cardBrand: updated.cardBrand,
+        cardNumber: updated.cardNumber,
+      });
+    }
+
+    // ---- PayPal callback — capture the payment after customer approves ----
+    if (gatewayParam === "paypal" || (!gatewayParam && ppCfg)) {
+      if (!ppCfg) {
+        // Demo mode
+        const updated = await db.order.update({
+          where: { id: order.id },
+          data: {
+            status: "PAID",
+            approvalCode: `PP${Math.floor(100000 + Math.random() * 900000)}`,
+            cardBrand: "PayPal",
+            rawResponse: JSON.stringify({ simulated: true }),
+          },
+          include: { items: true },
+        });
+        return NextResponse.json({
+          status: "PAID",
+          orderRef,
+          approvalCode: updated.approvalCode,
+        });
+      }
+
+      // Real PayPal: get token + capture the order
+      const tokenResult = await paypalGetToken(ppCfg);
+      if (!tokenResult.ok) {
+        return NextResponse.json({ status: "FAILED", orderRef, error: tokenResult.error }, { status: 502 });
+      }
+
+      const paypalOrderId = order.ublOrderId || orderRef;
+      const captureResult = await paypalCaptureOrder(ppCfg, tokenResult.accessToken, paypalOrderId);
+
+      if (!captureResult.ok) {
+        await db.order.update({
+          where: { id: order.id },
+          data: { status: "FAILED", rawResponse: JSON.stringify({ error: captureResult.error }) },
+        });
+        return NextResponse.json({ status: "FAILED", orderRef, error: captureResult.error });
+      }
+
+      if (captureResult.status === "PAID") {
+        const updated = await db.order.update({
+          where: { id: order.id },
+          data: {
+            status: "PAID",
+            approvalCode: captureResult.transactionId,
+            cardBrand: "PayPal",
+            rawResponse: JSON.stringify(captureResult.raw),
+          },
+          include: { items: true },
+        });
+        return NextResponse.json({
+          status: "PAID",
+          orderRef,
+          approvalCode: updated.approvalCode,
+          cardBrand: updated.cardBrand,
+        });
+      }
+
+      await db.order.update({
+        where: { id: order.id },
+        data: { status: "FAILED", rawResponse: JSON.stringify(captureResult.raw) },
+      });
+      return NextResponse.json({ status: "FAILED", orderRef, error: "PayPal payment not completed" });
+    }
 
     // Check if this is a Bank Alfalah return (BAFL sends result params in the redirect)
     const baflResult = req.nextUrl.searchParams.get("result") || req.nextUrl.searchParams.get("RespCode");

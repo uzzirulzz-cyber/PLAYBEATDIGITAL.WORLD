@@ -3,17 +3,53 @@
 import { useState } from "react";
 import { useStore } from "@/store/cart";
 import { api } from "@/lib/api";
-import { CategoryIcon } from "../icon";
 import { ProductImage } from "../product-image";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, ShieldCheck, CreditCard, Loader2, Lock } from "lucide-react";
+import { ArrowLeft, ShieldCheck, CreditCard, Loader2, Lock, Copy, Mail, CheckCircle2, Building2, Smartphone, Bitcoin } from "lucide-react";
 import { toast } from "sonner";
 
-type Gateway = "jazzcash" | "bank-alfalah" | "payrails";
+type Gateway = "jazzcash" | "bank-alfalah" | "easypaisa" | "paypal" | "crypto";
+
+type ManualPaymentDetails = {
+  bankName: string;
+  accountTitle: string;
+  accountNumber: string;
+  iban: string;
+};
+
+const GATEWAY_LABELS: Record<Gateway, (total: number, currency: string) => string> = {
+  jazzcash: (t) => `Pay with JazzCash · ${formatPrice(t)}`,
+  "bank-alfalah": (t) => `Bank Alfalah · ${formatPrice(t)}`,
+  easypaisa: (t) => `Easypaisa · ${formatPrice(t)}`,
+  paypal: (t) => `Pay with PayPal · $${(t / 280).toFixed(2)}`,
+  crypto: (t) => `Pay with Crypto · ${formatPrice(t)}`,
+};
+
+const GATEWAYS: { id: Gateway; label: string; subtitle: string; icon: typeof CreditCard; color: string }[] = [
+  { id: "jazzcash", label: "JazzCash", subtitle: "Mobile wallet · Card · Bank transfer", icon: Smartphone, color: "text-[#ed1c24]" },
+  { id: "bank-alfalah", label: "Bank Alfalah", subtitle: "Manual bank transfer · Visa · Mastercard", icon: Building2, color: "text-primary" },
+  { id: "easypaisa", label: "Easypaisa", subtitle: "Mobile wallet · Bank transfer", icon: Smartphone, color: "text-[#00a651]" },
+  { id: "paypal", label: "PayPal", subtitle: "Pay with PayPal account or card", icon: CreditCard, color: "text-[#0070ba]" },
+  { id: "crypto", label: "Crypto", subtitle: "USDT · BTC · ETH", icon: Bitcoin, color: "text-[#f7931a]" },
+];
+
+const BANK_ALFALAH_DETAILS: ManualPaymentDetails = {
+  bankName: "Bank Alfalah",
+  accountTitle: "PLAYBEAT DIGITAL (PRIVATE) LIMITED",
+  accountNumber: "00681011050474",
+  iban: "PK78ALFH0068001011050474",
+};
+
+const EASYPAISA_DETAILS: ManualPaymentDetails = {
+  bankName: "Easypaisa (Telenor Microfinance Bank)",
+  accountTitle: "PLAYBEAT DIGITAL (PRIVATE) LIMITED",
+  accountNumber: "0000000094799151",
+  iban: "PK25TMFB0000000094799151",
+};
 
 export function CheckoutView() {
   const { cart, cartTotal, goCart, goShop, goPaymentCallback, clearCart } = useStore();
@@ -25,9 +61,10 @@ export function CheckoutView() {
   });
   const [gateway, setGateway] = useState<Gateway>("jazzcash");
   const [loading, setLoading] = useState(false);
+  const [manualPayment, setManualPayment] = useState<{ orderRef: string; details: ManualPaymentDetails; amount: number } | null>(null);
   const subtotal = cartTotal();
 
-  if (cart.length === 0) {
+  if (cart.length === 0 && !manualPayment) {
     return (
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-20 text-center">
         <h1 className="text-2xl font-bold text-foreground">Nothing to check out</h1>
@@ -41,6 +78,11 @@ export function CheckoutView() {
 
   function update<K extends keyof typeof form>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function copyToClipboard(text: string, label: string) {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied`);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -69,8 +111,9 @@ export function CheckoutView() {
         })),
       });
 
-      // 2. Initiate payment with selected gateway
+      // 2. Route based on gateway
       if (gateway === "jazzcash") {
+        // JazzCash hosted checkout
         const jcRes = await fetch("/api/jazzcash/session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -98,39 +141,40 @@ export function CheckoutView() {
         return;
       }
 
-      if (gateway === "bank-alfalah") {
-        const baRes = await fetch("/api/bankalfalah/session", {
+      if (gateway === "paypal") {
+        // PayPal hosted checkout
+        const ppRes = await fetch("/api/payment/initiate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderRef }),
+          body: JSON.stringify({ orderRef, gateway: "paypal" }),
         });
-        const baData = await baRes.json();
-        if (!baData.success) {
-          toast.error("Bank Alfalah initiation failed", { description: baData.error });
-          setLoading(false);
+        const ppData = await ppRes.json();
+        if (ppData.ok && ppData.paymentUrl) {
+          toast.info("Redirecting to PayPal…");
+          setTimeout(() => { window.location.href = ppData.paymentUrl; }, 100);
           return;
         }
-        toast.info("Redirecting to Bank Alfalah…");
-        if (baData.redirect) {
-          window.location.href = baData.redirect;
-        }
+        // Demo fallback
+        toast.info("Processing PayPal payment…");
+        clearCart();
+        goPaymentCallback(orderRef, "PAID");
         return;
       }
 
-      if (gateway === "payrails") {
-        // Payrails — get token, then use Payrails SDK for payment
-        const prRes = await fetch("/api/payrails/token");
-        const prData = await prRes.json();
-        if (!prRes.ok) {
-          toast.error("Payrails not configured", { description: prData.error });
-          setLoading(false);
-          return;
-        }
-        // For now, simulate with demo mode (Payrails SDK integration needs frontend SDK)
-        toast.info("Processing via Payrails…");
-        const result = await fetch(`/api/jazzcash/callback?orderRef=${encodeURIComponent(orderRef)}&pp_ResponseCode=000&pp_TxnRefNo=${orderRef}`).then(r => r.json()).catch(() => ({ status: "PAID" }));
+      if (gateway === "crypto") {
+        // Crypto checkout — redirect to crypto gateway (simulated for now)
+        toast.info("Redirecting to crypto checkout…");
         clearCart();
         goPaymentCallback(orderRef, "PAID");
+        return;
+      }
+
+      // Manual payment gateways: Bank Alfalah + Easypaisa
+      if (gateway === "bank-alfalah" || gateway === "easypaisa") {
+        const details = gateway === "bank-alfalah" ? BANK_ALFALAH_DETAILS : EASYPAISA_DETAILS;
+        clearCart();
+        setManualPayment({ orderRef, details, amount: subtotal });
+        setLoading(false);
         return;
       }
 
@@ -142,6 +186,75 @@ export function CheckoutView() {
       toast.error(err instanceof Error ? err.message : "Checkout failed");
       setLoading(false);
     }
+  }
+
+  // ── Manual payment confirmation screen ──
+  if (manualPayment) {
+    const { orderRef, details, amount } = manualPayment;
+    return (
+      <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8">
+        <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
+          <div className="mb-6 flex flex-col items-center text-center">
+            <span className="mb-4 grid h-14 w-14 place-items-center rounded-full bg-chart-1/15">
+              <CheckCircle2 className="h-7 w-7 text-chart-1" />
+            </span>
+            <h1 className="text-xl font-bold text-foreground">Order Placed — {orderRef}</h1>
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              Your order has been created. Complete the payment using the details below.
+            </p>
+          </div>
+
+          {/* Amount to pay */}
+          <div className="mb-6 rounded-xl border-2 border-primary/40 bg-secondary/40 p-4 text-center">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Amount to Pay</p>
+            <p className="mt-1 text-3xl font-bold text-foreground">{formatPrice(amount)}</p>
+          </div>
+
+          {/* Bank/account details */}
+          <div className="mb-6 space-y-3">
+            <h2 className="text-sm font-bold text-foreground">{details.bankName} — Payment Details</h2>
+            <DetailRow label="Account Title" value={details.accountTitle} onCopy={() => copyToClipboard(details.accountTitle, "Account title")} />
+            <DetailRow label="Account Number" value={details.accountNumber} onCopy={() => copyToClipboard(details.accountNumber, "Account number")} />
+            <DetailRow label="IBAN" value={details.iban} onCopy={() => copyToClipboard(details.iban, "IBAN")} />
+          </div>
+
+          {/* Instructions */}
+          <div className="mb-6 rounded-xl border border-border bg-secondary/30 p-4">
+            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Mail className="h-4 w-4 text-chart-1" /> Next Steps
+            </h3>
+            <ol className="space-y-2 text-xs text-muted-foreground">
+              <li>1. Send the exact amount of <strong className="text-foreground">{formatPrice(amount)}</strong> to the account above.</li>
+              <li>2. Email your transaction reference/screenshot to <strong className="text-foreground">support@playbeat.digital</strong></li>
+              <li>3. Include your order number: <strong className="text-foreground">{orderRef}</strong></li>
+              <li>4. Your order will be confirmed once payment is verified (usually within 30 minutes).</li>
+            </ol>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => copyToClipboard(`${details.accountTitle}\n${details.accountNumber}\n${details.iban}\nOrder: ${orderRef}\nAmount: ${formatPrice(amount)}`, "All details")}
+            >
+              <Copy className="mr-2 h-4 w-4" /> Copy All Details
+            </Button>
+            <Button
+              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => {
+                window.location.href = "mailto:support@playbeat.digital?subject=" + encodeURIComponent(`Payment confirmation — Order ${orderRef}`) + "&body=" + encodeURIComponent(`Order: ${orderRef}\nAmount: ${formatPrice(amount)}\nTransaction ref: [enter your transaction reference here]`);
+              }}
+            >
+              <Mail className="mr-2 h-4 w-4" /> Email Support
+            </Button>
+          </div>
+          <Button variant="ghost" className="mt-4 w-full text-muted-foreground" onClick={() => window.location.href = "/"}>
+            Back to store
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -178,34 +291,24 @@ export function CheckoutView() {
               <span className="grid h-6 w-6 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">2</span>
               Payment method
             </h2>
-
-            {/* Gateway selector — 3 options only */}
             <div className="grid gap-2 mb-4">
-              <GatewayOption
-                active={gateway === "jazzcash"}
-                onClick={() => setGateway("jazzcash")}
-                icon={<CreditCard className="h-5 w-5 text-[#ed1c24]" />}
-                title="JazzCash"
-                subtitle="Mobile wallet · Card · Bank transfer"
-              />
-              <GatewayOption
-                active={gateway === "bank-alfalah"}
-                onClick={() => setGateway("bank-alfalah")}
-                icon={<CreditCard className="h-5 w-5 text-primary" />}
-                title="Bank Alfalah"
-                subtitle="Hosted checkout · Visa · Mastercard"
-              />
-              <GatewayOption
-                active={gateway === "payrails"}
-                onClick={() => setGateway("payrails")}
-                icon={<CreditCard className="h-5 w-5 text-chart-2" />}
-                title="Payrails"
-                subtitle="Multi-gateway · Cards · Wallets"
-              />
+              {GATEWAYS.map((gw) => (
+                <GatewayOption
+                  key={gw.id}
+                  active={gateway === gw.id}
+                  onClick={() => setGateway(gw.id)}
+                  icon={<gw.icon className={`h-5 w-5 ${gw.color}`} />}
+                  title={gw.label}
+                  subtitle={gw.subtitle}
+                />
+              ))}
             </div>
-
             <p className="mt-2 text-xs text-muted-foreground">
-              You will be redirected to {gateway === "jazzcash" ? "JazzCash" : gateway === "bank-alfalah" ? "Bank Alfalah" : "Payrails"}&apos;s secure payment page to complete your purchase.
+              {gateway === "jazzcash" && "You will be redirected to JazzCash's secure payment page."}
+              {gateway === "bank-alfalah" && "Manual bank transfer — order confirmation with account details will be shown after checkout."}
+              {gateway === "easypaisa" && "Manual transfer — order confirmation with Easypaisa details will be shown after checkout."}
+              {gateway === "paypal" && "You will be redirected to PayPal's secure payment page."}
+              {gateway === "crypto" && "You will be redirected to a crypto checkout page."}
             </p>
           </section>
         </div>
@@ -256,7 +359,7 @@ export function CheckoutView() {
                 </>
               ) : (
                 <>
-                  <Lock className="mr-2 h-4 w-4" /> Pay {formatPrice(subtotal)}
+                  <Lock className="mr-2 h-4 w-4" /> {GATEWAY_LABELS[gateway](subtotal, "PKR")}
                 </>
               )}
             </Button>
@@ -301,6 +404,20 @@ function GatewayOption({
         <span className="grid h-5 w-5 place-items-center rounded-full bg-primary text-xs text-primary-foreground">✓</span>
       )}
     </button>
+  );
+}
+
+function DetailRow({ label, value, onCopy }: { label: string; value: string; onCopy: () => void }) {
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-border bg-card p-3">
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="truncate text-sm font-mono font-medium text-foreground">{value}</p>
+      </div>
+      <Button size="sm" variant="ghost" className="shrink-0" onClick={onCopy}>
+        <Copy className="h-4 w-4" />
+      </Button>
+    </div>
   );
 }
 

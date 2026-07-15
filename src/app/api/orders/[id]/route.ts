@@ -41,8 +41,7 @@ export async function PATCH(
       status?: string;
       approvalCode?: string | null;
       cardBrand?: string | null;
-      cardNumber?: string | null;
-      ublOrderId?: string | null;
+      transactionId?: string | null;
       rawResponse?: string | null;
     };
 
@@ -62,11 +61,8 @@ export async function PATCH(
     if (body.cardBrand !== undefined) {
       data.cardBrand = body.cardBrand === null ? null : String(body.cardBrand);
     }
-    if (body.cardNumber !== undefined) {
-      data.cardNumber = body.cardNumber === null ? null : String(body.cardNumber);
-    }
-    if (body.ublOrderId !== undefined) {
-      data.ublOrderId = body.ublOrderId === null ? null : String(body.ublOrderId);
+    if (body.transactionId !== undefined) {
+      data.transactionId = body.transactionId === null ? null : String(body.transactionId);
     }
     if (body.rawResponse !== undefined) {
       data.rawResponse = body.rawResponse === null ? null : String(body.rawResponse);

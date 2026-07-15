@@ -42,7 +42,7 @@ export type Order = {
   amount: number;
   currency: string;
   status: "PENDING" | "PAID" | "FAILED" | "REFUNDED";
-  ublOrderId: string | null;
+  transactionId: string | null;
   approvalCode: string | null;
   cardBrand: string | null;
   cardNumber: string | null;

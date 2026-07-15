@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     await db.order.update({
       where: { id: order.id },
-      data: { ublOrderId: result.authToken },
+      data: { transactionId: result.authToken },
     });
 
     return NextResponse.json({

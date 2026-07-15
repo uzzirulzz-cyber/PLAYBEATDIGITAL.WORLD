@@ -37,9 +37,9 @@ async function handleCallback(req: NextRequest): Promise<NextResponse> {
   const txnRefNo = params.pp_TxnRefNo || "";
   const isSuccess = responseCode === "000";
 
-  // Find the order by the JazzCash txn ref (stored in ublOrderId)
+  // Find the order by the JazzCash txn ref (stored in transactionId)
   const order = await db.order.findFirst({
-    where: { OR: [{ orderRef: txnRefNo }, { ublOrderId: txnRefNo }] },
+    where: { OR: [{ orderRef: txnRefNo }, { transactionId: txnRefNo }] },
     include: { items: true },
   });
 

@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     // Store the JazzCash txn ref on the order
     await db.order.update({
       where: { id: order.id },
-      data: { ublOrderId: result.txnRefNo },
+      data: { transactionId: result.txnRefNo },
     });
 
     return NextResponse.json({

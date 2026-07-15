@@ -8,11 +8,11 @@ export function formatPKR(amount: number): string {
   }).format(amount);
 }
 
-export function formatPrice(amount: number, currency = "USD"): string {
+export function formatPrice(amount: number, currency = "PKR"): string {
   if (currency === "USD") {
     return `$${amount.toFixed(amount % 1 === 0 ? 0 : 2)}`;
   }
-  return `${currency} ${formatPKR(amount)}`;
+  return `Rs ${formatPKR(amount)}`;
 }
 
 export function discountPercent(price: number, oldPrice?: number): number | null {

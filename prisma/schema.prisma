@@ -1,4 +1,4 @@
-// Playbeat Digital Store — Prisma schema
+// Playbeat Digital Store — Prisma schema (PostgreSQL)
 generator client {
   provider = "prisma-client-js"
 }
@@ -27,9 +27,6 @@ model Product {
   updatedAt   DateTime @updatedAt
 
   orderItems OrderItem[]
-
-  @@index([category])
-  @@index([featured])
 }
 
 model Order {
@@ -41,20 +38,15 @@ model Order {
   shippingAddress String
   amount          Float
   currency        String   @default("PKR")
-  status          String   @default("PENDING") // PENDING | PAID | FAILED | REFUNDED
-  ublOrderId      String?
+  status          String   @default("PENDING")
+  transactionId   String?
   approvalCode    String?
   cardBrand       String?
-  cardNumber      String?
   rawResponse     String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   items OrderItem[]
-
-  @@index([status])
-  @@index([customerEmail])
-  @@index([createdAt])
 }
 
 model OrderItem {
@@ -77,12 +69,11 @@ model OrderItem {
 
 model AiGeneration {
   id         String   @id @default(cuid())
-  tool       String   // product-writer | blog-post | seo-meta | email-campaign | banner | customer-reply
+  tool       String
   input      String
   output     String
   tokensUsed Int      @default(0)
   createdAt  DateTime @default(now())
 
   @@index([tool])
-  @@index([createdAt])
 }

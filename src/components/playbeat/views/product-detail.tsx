@@ -196,7 +196,7 @@ export function ProductDetailView({ slug }: { slug: string }) {
             </div>
             <div className="flex items-center gap-2 text-sm">
               <ShieldCheck className="h-4 w-4 text-chart-1" />
-              <span className="text-muted-foreground">Secure PayFast checkout</span>
+              <span className="text-muted-foreground">Secure checkout</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Zap className="h-4 w-4 text-chart-1" />

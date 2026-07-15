@@ -142,28 +142,10 @@ export const api = {
   updateOrder: (id: string, body: Partial<Order>) =>
     jsonFetch<Order>(`/api/orders/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
 
-  initiatePayment: (orderRef: string, card?: { cardNumber: string; expiryMonth: string; expiryYear: string; cvv: string }, gateway?: "paypal" | "payfast" | "bank-alfalah" | "jazzcash") =>
-    jsonFetch<{
-      ok: boolean;
-      demo: boolean;
-      orderRef: string;
-      gateway?: string;
-      paymentUrl?: string;
-      authToken?: string;
-      transactionId?: string;
-      instrumentToken?: string;
-      otpRequired?: boolean;
-      eci?: boolean;
-      data3dsHtml?: string | null;
-      data3dsSecureid?: string | null;
-      error?: string;
-    }>(
-      `/api/payment/initiate`,
-      { method: "POST", body: JSON.stringify({ orderRef, card, gateway }) }
-    ),
-  paymentCallback: (orderRef: string, demo = false, paRes?: string) =>
+
+  paymentCallback: (orderRef: string, demo = false) =>
     jsonFetch<{ status: string; orderRef: string; approvalCode?: string; cardBrand?: string; cardNumber?: string; error?: string }>(
-      `/api/payment/callback?orderRef=${encodeURIComponent(orderRef)}${demo ? "&demo=1" : ""}${paRes ? `&paRes=${encodeURIComponent(paRes)}` : ""}`
+      `/api/jazzcash/callback?orderRef=${encodeURIComponent(orderRef)}${demo ? "&pp_ResponseCode=000&pp_TxnRefNo=" + encodeURIComponent(orderRef) : ""}`
     ),
   refundOrder: (orderId: string, reason?: string) =>
     jsonFetch<{ ok: boolean; code?: string; message?: string; error?: string }>(
@@ -172,15 +154,16 @@ export const api = {
     ),
 
   adminStats: () => jsonFetch<AdminStats>(`/api/admin/stats`),
-
-  aiGenerate: (
-    tool: string,
-    input: string,
-    options?: Record<string, unknown>
-  ) =>
-    jsonFetch<AiGenerationResult>(`/api/ai/generate`, {
-      method: "POST",
-      body: JSON.stringify({ tool, input, options }),
-    }),
-  aiStats: () => jsonFetch<AiStats>(`/api/ai/stats`),
+  aiGenerate: (tool: string, input: string, options?: Record<string, unknown>) =>
+    jsonFetch<{ ok: boolean; output?: string; imageUrl?: string; generationId?: string; tokensUsed?: number; error?: string }>(
+      `/api/ai/generate`,
+      { method: "POST", body: JSON.stringify({ tool, input, options }) }
+    ),
+  aiStats: () => jsonFetch<{
+    totalGenerations: number;
+    tokensUsed30d: number;
+    activeTools: number;
+    toolStats: { tool: string; count: number; lastUsed: string | null }[];
+    recent: { id: string; tool: string; input: string; createdAt: string; tokensUsed: number }[];
+  }>(`/api/ai/stats`),
 };

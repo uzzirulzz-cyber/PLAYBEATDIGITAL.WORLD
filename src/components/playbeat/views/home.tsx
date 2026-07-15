@@ -199,7 +199,7 @@ export function HomeView() {
 
       {/* Trust banner */}
       <section className="mt-12 grid gap-4 sm:grid-cols-3">
-        <TrustTile icon={CreditCard} title="PayFast secure checkout" text="Pay with Visa, Mastercard & RAAST through the PayFast Payment Gateway with 3D Secure." />
+        <TrustTile icon={CreditCard} title="Secure checkout" text="Pay securely with JazzCash, Bank Alfalah or Payrails. Multiple payment options.." />
         <TrustTile icon={ShieldCheck} title="Genuine licenses" text="Every key and subscription is 100% authentic and activation-guaranteed." />
         <TrustTile icon={Globe} title="Global delivery" text="All products are digital and region-free — usable anywhere in the world." />
       </section>

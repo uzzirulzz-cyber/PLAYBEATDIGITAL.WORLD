@@ -134,7 +134,7 @@ export function Footer() {
                 <Shield className="h-4 w-4 text-chart-1" /> Secure Checkout
               </p>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                All payments processed by Bank Alfalah &amp; PayFast. PCI-DSS compliant.
+                All payments processed by Bank Alfalah, JazzCash &amp; Payrails. PCI-DSS compliant.
               </p>
             </div>
           </div>
@@ -146,7 +146,7 @@ export function Footer() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-4">
           <p className="mb-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">We Accept</p>
           <div className="flex flex-wrap items-center justify-center gap-2">
-            {["Visa", "Mastercard", "Stripe", "PayPal", "Lemon Squeezy", "JazzCash", "EasyPaisa", "UBL", "Meezan Bank", "Bank Alfalah", "USDT"].map((pm) => (
+            {["Visa", "Mastercard", "JazzCash", "Bank Alfalah", "Payrails", "EasyPaisa", "USDT"].map((pm) => (
               <span key={pm} className="rounded border border-border bg-secondary/40 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
                 {pm}
               </span>

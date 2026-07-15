@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Playbeat Digital Store — Games, Gift Cards, AI Tools & Subscriptions",
   description:
-    "Playbeat Digital Store — buy digital products worldwide. Game keys, gift cards, AI tools, streaming and software subscriptions. Secure checkout powered by UBL Payment Gateway.",
+    "Playbeat Digital Store — buy digital products worldwide. Game keys, gift cards, AI tools, streaming and software subscriptions. Secure checkout powered by JazzCash, Bank Alfalah & Payrails.",
   keywords: [
     "Playbeat",
     "digital store",
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     "gift cards",
     "AI tools",
     "subscriptions",
-    "UBL payment gateway",
+    "JazzCash, Bank Alfalah, Payrails",
     "Pakistan e-commerce",
   ],
   authors: [{ name: "Playbeat" }],

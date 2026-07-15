@@ -142,7 +142,7 @@ export const api = {
   updateOrder: (id: string, body: Partial<Order>) =>
     jsonFetch<Order>(`/api/orders/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
 
-  initiatePayment: (orderRef: string, card?: { cardNumber: string; expiryMonth: string; expiryYear: string; cvv: string }, gateway?: "paypal" | "payfast" | "bank-alfalah") =>
+  initiatePayment: (orderRef: string, card?: { cardNumber: string; expiryMonth: string; expiryYear: string; cvv: string }, gateway?: "paypal" | "payfast" | "bank-alfalah" | "jazzcash") =>
     jsonFetch<{
       ok: boolean;
       demo: boolean;

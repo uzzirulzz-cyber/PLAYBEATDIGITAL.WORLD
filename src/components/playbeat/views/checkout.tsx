@@ -27,7 +27,7 @@ export function CheckoutView() {
     expiryYear: "",
     cvv: "",
   });
-  const [gateway, setGateway] = useState<"paypal" | "bank-alfalah" | "payfast">("paypal");
+  const [gateway, setGateway] = useState<"paypal" | "jazzcash" | "bank-alfalah" | "payfast">("paypal");
   const [loading, setLoading] = useState(false);
   const subtotal = cartTotal();
 
@@ -97,7 +97,37 @@ export function CheckoutView() {
         return;
       }
 
-      // 3b. Bank Alfalah hosted checkout — redirect to BAFL payment page
+      // 3b. JazzCash — POST to JazzCash hosted payment page
+      if (gateway === "jazzcash") {
+        const jcRes = await fetch("/api/jazzcash/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderRef }),
+        });
+        const jcData = await jcRes.json();
+        if (!jcData.success) {
+          toast.error("JazzCash initiation failed", { description: jcData.error });
+          setLoading(false);
+          return;
+        }
+        // Create auto-submitting form to POST to JazzCash
+        toast.info("Redirecting to JazzCash…");
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = jcData.apiUrl;
+        Object.entries(jcData.postData).forEach(([key, value]) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = String(value);
+          form.appendChild(input);
+        });
+        document.body.appendChild(form);
+        form.submit();
+        return;
+      }
+
+      // 3c. Bank Alfalah hosted checkout — redirect to BAFL payment page
       if (!init.demo && init.paymentUrl && (init.gateway === "bank-alfalah")) {
         toast.info("Redirecting to Bank Alfalah secure payment page…");
         window.location.href = init.paymentUrl;
@@ -198,6 +228,24 @@ export function CheckoutView() {
                   <p className="text-xs text-muted-foreground">Hosted checkout · Visa · Mastercard</p>
                 </div>
                 {gateway === "bank-alfalah" && (
+                  <span className="grid h-5 w-5 place-items-center rounded-full bg-primary text-xs text-primary-foreground">✓</span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setGateway("jazzcash")}
+                className={`flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-colors ${
+                  gateway === "jazzcash"
+                    ? "border-primary/60 bg-secondary/40"
+                    : "border-border bg-card hover:border-primary/30"
+                }`}
+              >
+                <CreditCard className="h-5 w-5 text-[#ed1c24]" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">JazzCash</p>
+                  <p className="text-xs text-muted-foreground">Mobile wallet · Card · Bank transfer</p>
+                </div>
+                {gateway === "jazzcash" && (
                   <span className="grid h-5 w-5 place-items-center rounded-full bg-primary text-xs text-primary-foreground">✓</span>
                 )}
               </button>
